@@ -14,18 +14,17 @@
  *
  * __construct()
  * init_form_fields()
- * add_testmode_admin_settings_notice()
  * plugin_url()
  * add_currency()
  * add_currency_symbol()
  * is_valid_for_use()
  * admin_options()
  * payment_fields()
- * generate_payfast_form()
+ * generate_paynow_form()
  * process_payment()
  * receipt_page()
- * check_itn_request_is_valid()
- * check_itn_response()
+ * check_ipn_request_is_valid()
+ * check_ipn_response()
  * successful_request()
  * setup_constants()
  * log()
@@ -40,6 +39,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 	public function __construct() {
         global $woocommerce;
+        
+        //$this->notify_url        = str_replace( 'https:', 'http:', add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) ) );
+        
         $this->id			= 'paynow';
         $this->method_title = __( 'Pay Now', 'woothemes' );
         $this->icon 		= $this->plugin_url() . '/assets/images/icon.png';
@@ -68,16 +70,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->validate_url = 'https://www.payfast.co.za/eng/query/validate';
 		$this->title = $this->settings['title'];
 
-		// Setup the test data, if in test mode.
-		if ( $this->settings['testmode'] == 'yes' ) {
-			$this->add_testmode_admin_settings_notice();
-			$this->url = 'https://sandbox.payfast.co.za/eng/process?aff=woo-free';
-			$this->validate_url = 'https://sandbox.payfast.co.za/eng/query/validate';
-		}
-
 		$this->response_url	= add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) );
 
-		add_action( 'woocommerce_api_wc_gateway_paynow', array( $this, 'check_itn_response' ) );
+		add_action( 'woocommerce_api_wc_gateway_paynow', array( $this, 'check_ipn_response' ) );
+		
+		// Callback URL
+		// See http://docs.woothemes.com/document/wc_api-the-woocommerce-api-callback/
+		//add_action( 'woocommerce_api_callback', 'check_ipn_response' );
+		
 		add_action( 'valid-paynow-standard-itn-request', array( $this, 'successful_request' ) );
 
 		/* 1.6.6 */
@@ -137,17 +137,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
     } // End init_form_fields()
 
     /**
-     * add_testmode_admin_settings_notice()
-     *
-     * Add a notice to the service_key when in test mode.
-     *
-     * @since 1.0.0
-     */
-    function add_testmode_admin_settings_notice () {    	
-    	$this->form_fields['service_key']['description'] .= ' <strong>' . __( 'PayNow Sandbox Merchant Key currently in use.', 'woothemes' ) . ' ( 46f0cd694581a )</strong>';
-    } // End add_testmode_admin_settings_notice()
-
-    /**
 	 * Get the plugin URL
 	 *
 	 * @since 1.0.0
@@ -193,6 +182,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public function admin_options() {
 		// Make sure to empty the log file if not in test mode.
+		// TODO Test mode does not exist so improve the lines below
 		if ( $this->settings['testmode'] != 'yes' ) {
 			$this->log( '' );
 			$this->log( '', true );
@@ -233,7 +223,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @since 1.0.0
 	 */
-    public function generate_payfast_form( $order_id ) {
+    public function generate_paynow_form( $order_id ) {
 
 		global $woocommerce;
 
@@ -244,7 +234,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// Construct variables for post
 	    $this->data_to_send = array(
 	        // Merchant details	        
-	        'service_key' => $this->settings['service_key'],
+	        'm1' => $this->settings['service_key'],
+	    	'm2' => '24ade73c-98cf-47b3-99be-cc7b867b3080',
 	        'return_url' => $this->get_return_url( $order ),
 	        'cancel_url' => $order->get_cancel_order_url(),
 	        'notify_url' => $this->response_url,
@@ -255,22 +246,17 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// 'email_address' => $order->billing_email,
 
 	        // Item details
-	        'm_payment_id' => ltrim( $order->get_order_number(), __( '#', 'hash before order number', 'woothemes' ) ),
-	        'amount' => $order->order_total,
+	        'm4' => ltrim( $order->get_order_number(), __( '#', 'hash before order number', 'woothemes' ) ),
+	        'p4' => $order->order_total,
 	    	'item_name' => get_bloginfo( 'name' ) .' purchase, Order ' . $order->get_order_number(),
-	    	'item_description' => sprintf( __( 'New order from %s', 'woothemes' ), get_bloginfo( 'name' ) ),
+	    	'p3' => sprintf( __( 'New order from %s', 'woothemes' ), get_bloginfo( 'name' ) ),
 
-	    	// Custom strings
-	    	'custom_str1' => $order->order_key,
-	    	'custom_str2' => 'WooCommerce/' . $woocommerce->version . '; ' . get_site_url(),
-	    	'custom_str3' => $order->id,
+	    	// Extra fields
+	    	'p2' => $order->order_key,
+	    	'm5' => 'WooCommerce/' . $woocommerce->version . '; ' . get_site_url(),
+	    	'm6' => $order->id,
 	    	'source' => 'WooCommerce-Free-Plugin'
 	   	);
-
-	   	// Override service_key if the gateway is in test mode.
-	   	if ( $this->settings['testmode'] == 'yes' ) {	   		
-	   		$this->data_to_send['service_key'] = '46f0cd694581a';
-	   	}
 
 		$paynow_args_array = array();
 
@@ -280,7 +266,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		return '<form action="' . $this->url . '" method="post" id="paynow_payment_form">
 				' . implode('', $paynow_args_array) . '
-				<input type="submit" class="button-alt" id="submit_paynow_payment_form" value="' . __( 'Pay via PayFast', 'woothemes' ) . '" /> <a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
+				<input type="submit" class="button-alt" id="submit_paynow_payment_form" value="' . __( 'Pay via Pay Now', 'woothemes' ) . '" /> <a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
 				<script type="text/javascript">
 					jQuery(function(){
 						jQuery("body").block(
@@ -305,7 +291,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				</script>
 			</form>';
 
-	} // End generate_payfast_form()
+	} // End generate_paynow_form()
 
 	/**
 	 * Process the payment and return the result.
@@ -324,29 +310,29 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * Reciept page.
+	 * Receipt page.
 	 *
-	 * Display text and a button to direct the user to PayFast.
+	 * Display text and a button to direct the user to Pay Now.
 	 *
 	 * @since 1.0.0
 	 */
 	function receipt_page( $order ) {
-		echo '<p>' . __( 'Thank you for your order, please click the button below to pay with PayFast.', 'woothemes' ) . '</p>';
+		echo '<p>' . __( 'Thank you for your order, please click the button below to pay with Pay Now.', 'woothemes' ) . '</p>';
 
-		echo $this->generate_payfast_form( $order );
+		echo $this->generate_paynow_form( $order );
 	} // End receipt_page()
 
 	/**
-	 * Check PayFast ITN validity.
+	 * Check Pay Now IPN validity.
 	 *
 	 * @param array $data
 	 * @since 1.0.0
 	 */
-	function check_itn_request_is_valid( $data ) {
+	function check_ipn_request_is_valid( $data ) {
 		global $woocommerce;
 
 		$pnError = false;
-		$pfDone = false;
+		$pnDone = false;
 		$pnDebugEmail = $this->settings['debug_email'];
 
 		if ( ! is_email( $pnDebugEmail ) ) {
@@ -354,7 +340,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		$sessionid = $data['custom_str1'];
-        $transaction_id = $data['pf_payment_id'];
+        $transaction_id = $data['pn_payment_id'];
         $vendor_name = get_option( 'blogname' );
         $vendor_url = home_url( '/' );
 
@@ -377,56 +363,56 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	    $data_string = substr( $data_string, 0, -1 );
 	    $signature = md5( $data_string );
 
-		$this->log( "\n" . '----------' . "\n" . 'PayFast ITN call received' );
+		$this->log( "\n" . '----------' . "\n" . 'Pay Now IPN call received' );
 
 		// Notify PayFast that information has been received
-        if( ! $pnError && ! $pfDone ) {
+        if( ! $pnError && ! $pnDone ) {
             header( 'HTTP/1.0 200 OK' );
             flush();
         }
 
         // Get data sent by PayFast
-        if ( ! $pnError && ! $pfDone ) {
+        if ( ! $pnError && ! $pnDone ) {
         	$this->log( 'Get posted data' );
 
             $this->log( 'Pay Now Data: '. print_r( $data, true ) );
 
             if ( $data === false ) {
                 $pnError = true;
-                $pfErrMsg = PF_ERR_BAD_ACCESS;
+                $pnErrMsg = PF_ERR_BAD_ACCESS;
             }
         }
 
         // Verify security signature
-        if( ! $pnError && ! $pfDone ) {
+        if( ! $pnError && ! $pnDone ) {
             $this->log( 'Verify security signature' );
 
             // If signature different, log for debugging
             if( ! $this->validate_signature( $data, $signature ) ) {
                 $pnError = true;
-                $pfErrMsg = PF_ERR_INVALID_SIGNATURE;
+                $pnErrMsg = PF_ERR_INVALID_SIGNATURE;
             }
         }
 
         // Verify source IP (If not in debug mode)
-        if( ! $pnError && ! $pfDone && $this->settings['testmode'] != 'yes' ) {
+        if( ! $pnError && ! $pnDone && $this->settings['testmode'] != 'yes' ) {
             $this->log( 'Verify source IP' );
 
             if( ! $this->validate_ip( $_SERVER['REMOTE_ADDR'] ) ) {
                 $pnError = true;
-                $pfErrMsg = PF_ERR_BAD_SOURCE_IP;
+                $pnErrMsg = PF_ERR_BAD_SOURCE_IP;
             }
         }
 
         // Get internal order and verify it hasn't already been processed
-        if( ! $pnError && ! $pfDone ) {
+        if( ! $pnError && ! $pnDone ) {
 
             $this->log( "Purchase:\n". print_r( $order, true )  );
 
             // Check if order has already been processed
             if( $order->status == 'completed' ) {
                 $this->log( 'Order has already been processed' );
-                $pfDone = true;
+                $pnDone = true;
             }
         }
 
@@ -438,29 +424,29 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
             if( ! $pfValid ) {
                 $pnError = true;
-                $pfErrMsg = PF_ERR_BAD_ACCESS;
+                $pnErrMsg = PF_ERR_BAD_ACCESS;
             }
         }
 
         // Check data against internal order
-        if( ! $pnError && ! $pfDone ) {
+        if( ! $pnError && ! $pnDone ) {
             $this->log( 'Check data against internal order' );
 
             // Check order amount
             if( ! $this->amounts_equal( $data['amount_gross'], $order->order_total ) ) {
                 $pnError = true;
-                $pfErrMsg = PF_ERR_AMOUNT_MISMATCH;
+                $pnErrMsg = PF_ERR_AMOUNT_MISMATCH;
             }
             // Check session ID
             elseif( strcasecmp( $data['custom_str1'], $order->order_key ) != 0 )
             {
                 $pnError = true;
-                $pfErrMsg = PF_ERR_SESSIONID_MISMATCH;
+                $pnErrMsg = PF_ERR_SESSIONID_MISMATCH;
             }
         }
 
         // Check status and update order
-        if( ! $pnError && ! $pfDone ) {
+        if( ! $pnError && ! $pnDone ) {
             $this->log( 'Check status and update order' );
 
 		if ( $order->order_key !== $order_key ) { exit; }
@@ -470,18 +456,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
                     $this->log( '- Complete' );
 
                    // Payment completed
-					$order->add_order_note( __( 'ITN payment completed', 'woothemes' ) );
+					$order->add_order_note( __( 'IPN payment completed', 'woothemes' ) );
 					$order->payment_complete();
 
                     if( $this->settings['testmode'] == 'yes' && $this->settings['send_debug_email'] == 'yes' ) {
-                        $subject = "PayFast ITN on your site";
+                        $subject = "Pay Now IPN on your site";
                         $body =
                             "Hi,\n\n".
-                            "A PayFast transaction has been completed on your website\n".
+                            "A Pay Now transaction has been completed on your website\n".
                             "------------------------------------------------------------\n".
                             "Site: ". $vendor_name ." (". $vendor_url .")\n".
                             "Purchase ID: ". $data['m_payment_id'] ."\n".
-                            "Pay Now Transaction ID: ". $data['pf_payment_id'] ."\n".
+                            "Pay Now Transaction ID: ". $data['pn_payment_id'] ."\n".
                             "Pay Now Payment Status: ". $data['payment_status'] ."\n".
                             "Order Status Code: ". $order->status;
                         wp_mail( $pnDebugEmail, $subject, $body );
@@ -502,8 +488,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	                        "Site: ". $vendor_name ." (". $vendor_url .")\n".
 	                        "Purchase ID: ". $order->id ."\n".
 	                        "User ID: ". $order->user_id ."\n".
-	                        "PayFast Transaction ID: ". $data['pf_payment_id'] ."\n".
-	                        "PayFast Payment Status: ". $data['payment_status'];
+	                        "Pay Now Transaction ID: ". $data['pn_payment_id'] ."\n".
+	                        "Pay Now Payment Status: ". $data['payment_status'];
 	                    wp_mail( $pnDebugEmail, $subject, $body );
                     }
         			break;
@@ -512,7 +498,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
                     $this->log( '- Pending' );
 
                     // Need to wait for "Completed" before processing
-        			$order->update_status( 'pending', sprintf(__('Payment %s via ITN.', 'woothemes' ), strtolower( sanitize( $data['payment_status'] ) ) ) );
+        			$order->update_status( 'pending', sprintf(__('Payment %s via IPN.', 'woothemes' ), strtolower( sanitize( $data['payment_status'] ) ) ) );
         			break;
 
     			default:
@@ -523,13 +509,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
         // If an error occurred
         if( $pnError ) {
-            $this->log( 'Error occurred: '. $pfErrMsg );
+            $this->log( 'Error occurred: '. $pnErrMsg );
 
             if( $this->settings['testmode'] == 'yes' && $this->settings['send_debug_email'] == 'yes' ) {
 	            $this->log( 'Sending email notification' );
 
 	             // Send an email
-	            $subject = "Pay Now ITN error: ". $pfErrMsg;
+	            $subject = "Pay Now ITN error: ". $pnErrMsg;
 	            $body =
 	                "Hi,\n\n".
 	                "An invalid Pay Now transaction on your website requires attention\n".
@@ -539,14 +525,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	                "Remote host name: ". gethostbyaddr( $_SERVER['REMOTE_ADDR'] ) ."\n".
 	                "Purchase ID: ". $order->id ."\n".
 	                "User ID: ". $order->user_id ."\n";
-	            if( isset( $data['pf_payment_id'] ) )
-	                $body .= "PayFast Transaction ID: ". $data['pf_payment_id'] ."\n";
+	            if( isset( $data['pn_payment_id'] ) )
+	                $body .= "Pay Now Transaction ID: ". $data['pn_payment_id'] ."\n";
 	            if( isset( $data['payment_status'] ) )
-	                $body .= "PayFast Payment Status: ". $data['payment_status'] ."\n";
+	                $body .= "Pay Now Payment Status: ". $data['payment_status'] ."\n";
 	            $body .=
-	                "\nError: ". $pfErrMsg ."\n";
+	                "\nError: ". $pnErrMsg ."\n";
 
-	            switch( $pfErrMsg ) {
+	            switch( $pnErrMsg ) {
 	                case PF_ERR_AMOUNT_MISMATCH:
 	                    $body .=
 	                        "Value received : ". $data['amount_gross'] ."\n".
@@ -578,20 +564,24 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
         $this->log( '', true );
 
     	return $pnError;
-    } // End check_itn_request_is_valid()
+    } // End check_ipn_request_is_valid()
 
 	/**
-	 * Check PayFast ITN response.
+	 * Check Pay Now IPN response.
 	 *
 	 * @since 1.0.0
 	 */
-	function check_itn_response() {
+	function check_ipn_response() {
+		
+		// TODO Test
+		wp_die( "Pay Now IPN Request Failure", "PayPal IPN", array( 'response' => 200 ) );
+				
 		$_POST = stripslashes_deep( $_POST );
 
-		if ( $this->check_itn_request_is_valid( $_POST ) ) {
-			do_action( 'valid-payfast-standard-itn-request', $_POST );
+		if ( $this->check_ipn_request_is_valid( $_POST ) ) {
+			do_action( 'valid-paynow-standard-itn-request', $_POST );
 		}
-	} // End check_itn_response()
+	} // End check_ipn_response()
 
 	/**
 	 * Successful Payment!
