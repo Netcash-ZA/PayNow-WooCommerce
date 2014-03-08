@@ -1,0 +1,4 @@
+*** Pay Now Changelog ***
+
+2014.03.08 - version 1.0
+ * First Release
