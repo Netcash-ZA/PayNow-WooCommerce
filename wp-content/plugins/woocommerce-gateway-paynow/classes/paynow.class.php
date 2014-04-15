@@ -1,8 +1,8 @@
 <?php
 /**
- * Pay Now Payment Gateway
+ * Sage Pay Now Payment Gateway
  *
- * Provides a Pay Now Payment Gateway.
+ * Provides a Sage Pay Now Payment Gateway.
  *
  * @class 		woocommerce_paynow
  * @package		WooCommerce
@@ -65,9 +65,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// Setup default merchant data.		
 		$this->service_key = $this->settings['service_key'];
-		//$this->url = 'https://www.payfast.co.za/eng/process?aff=woo-free';
+
 		$this->url = 'https://paynow.sagepay.co.za/site/paynow.aspx';
-		$this->validate_url = 'https://www.payfast.co.za/eng/query/validate';
+		$this->validate_url = 'https://www.paynow.co.za/eng/query/validate';
 		$this->title = $this->settings['title'];
 
 		$this->response_url	= add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) );
@@ -112,7 +112,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
     										'title' => __( 'Title', 'woothemes' ),
     										'type' => 'text',
     										'description' => __( 'This controls the title which the user sees during checkout.', 'woothemes' ),
-    										'default' => __( 'PayFast', 'woothemes' )
+    										'default' => __( 'Sage Pay Now', 'woothemes' )
     									),
 							'description' => array(
 											'title' => __( 'Description', 'woothemes' ),
@@ -200,7 +200,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
     		?></table><!--/.form-table--><?php
 		} else {
 			?>
-			<div class="inline error"><p><strong><?php _e( 'Gateway Disabled', 'woothemes' ); ?></strong> <?php echo sprintf( __( 'Choose South African Rands as your store currency in <a href="%s">Pricing Options</a> to enable the PayFast Gateway.', 'woocommerce' ), admin_url( '?page=woocommerce&tab=catalog' ) ); ?></p></div>
+			<div class="inline error"><p><strong><?php _e( 'Gateway Disabled', 'woothemes' ); ?></strong> <?php echo sprintf( __( 'Choose South African Rands as your store currency in <a href="%s">Pricing Options</a> to enable the Sage Pay Now Gateway.', 'woocommerce' ), admin_url( '?page=woocommerce&tab=catalog' ) ); ?></p></div>
 		<?php
 		} // End check currency
 		?>
@@ -208,7 +208,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
     } // End admin_options()
 
     /**
-	 * There are no payment fields for PayFast, but we want to show the description if set.
+	 * There are no payment fields for Sage Pay Now, but we want to show the description if set.
 	 *
 	 * @since 1.0.0
 	 */
@@ -219,7 +219,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
     } // End payment_fields()
 
 	/**
-	 * Generate the PayFast button link.
+	 * Generate the Sage Pay Now button link.
 	 *
 	 * @since 1.0.0
 	 */
@@ -271,7 +271,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					jQuery(function(){
 						jQuery("body").block(
 							{
-								message: "<img src=\"' . $woocommerce->plugin_url() . '/assets/images/ajax-loader.gif\" alt=\"Redirecting...\" />' . __( 'Thank you for your order. We are now redirecting you to PayFast to make payment.', 'woothemes' ) . '",
+								message: "<img src=\"' . $woocommerce->plugin_url() . '/assets/images/ajax-loader.gif\" alt=\"Redirecting...\" />' . __( 'Thank you for your order. We are now redirecting you to Sage Pay Now to make payment.', 'woothemes' ) . '",
 								overlayCSS:
 								{
 									background: "#fff",
@@ -365,13 +365,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$this->log( "\n" . '----------' . "\n" . 'Pay Now IPN call received' );
 
-		// Notify PayFast that information has been received
+		// Notify Sage Pay Now that information has been received
         if( ! $pnError && ! $pnDone ) {
             header( 'HTTP/1.0 200 OK' );
             flush();
         }
 
-        // Get data sent by PayFast
+        // Get data sent by Sage Pay Now
         if ( ! $pnError && ! $pnDone ) {
         	$this->log( 'Get posted data' );
 
@@ -379,7 +379,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
             if ( $data === false ) {
                 $pnError = true;
-                $pnErrMsg = PF_ERR_BAD_ACCESS;
+                $pnErrMsg = PN_ERR_BAD_ACCESS;
             }
         }
 
@@ -390,7 +390,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
             // If signature different, log for debugging
             if( ! $this->validate_signature( $data, $signature ) ) {
                 $pnError = true;
-                $pnErrMsg = PF_ERR_INVALID_SIGNATURE;
+                $pnErrMsg = PN_ERR_INVALID_SIGNATURE;
             }
         }
 
@@ -400,7 +400,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
             if( ! $this->validate_ip( $_SERVER['REMOTE_ADDR'] ) ) {
                 $pnError = true;
-                $pnErrMsg = PF_ERR_BAD_SOURCE_IP;
+                $pnErrMsg = PN_ERR_BAD_SOURCE_IP;
             }
         }
 
@@ -416,18 +416,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
             }
         }
 
-        // Verify data received
-        if( ! $pnError ) {
-            $this->log( 'Verify data received' );
-
-            $pfValid = $this->validate_response_data( $data_array );
-
-            if( ! $pfValid ) {
-                $pnError = true;
-                $pnErrMsg = PF_ERR_BAD_ACCESS;
-            }
-        }
-
         // Check data against internal order
         if( ! $pnError && ! $pnDone ) {
             $this->log( 'Check data against internal order' );
@@ -435,13 +423,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
             // Check order amount
             if( ! $this->amounts_equal( $data['amount_gross'], $order->order_total ) ) {
                 $pnError = true;
-                $pnErrMsg = PF_ERR_AMOUNT_MISMATCH;
+                $pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
             }
             // Check session ID
             elseif( strcasecmp( $data['custom_str1'], $order->order_key ) != 0 )
             {
                 $pnError = true;
-                $pnErrMsg = PF_ERR_SESSIONID_MISMATCH;
+                $pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
             }
         }
 
@@ -533,19 +521,19 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	                "\nError: ". $pnErrMsg ."\n";
 
 	            switch( $pnErrMsg ) {
-	                case PF_ERR_AMOUNT_MISMATCH:
+	                case PN_ERR_AMOUNT_MISMATCH:
 	                    $body .=
 	                        "Value received : ". $data['amount_gross'] ."\n".
 	                        "Value should be: ". $order->order_total;
 	                    break;
 
-	                case PF_ERR_ORDER_ID_MISMATCH:
+	                case PN_ERR_ORDER_ID_MISMATCH:
 	                    $body .=
 	                        "Value received : ". $data['custom_str3'] ."\n".
 	                        "Value should be: ". $order->id;
 	                    break;
 
-	                case PF_ERR_SESSION_ID_MISMATCH:
+	                case PN_ERR_SESSION_ID_MISMATCH:
 	                    $body .=
 	                        "Value received : ". $data['custom_str1'] ."\n".
 	                        "Value should be: ". $order->id;
@@ -628,7 +616,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	/**
 	 * Setup constants.
 	 *
-	 * Setup common values and messages used by the PayFast gateway.
+	 * Setup common values and messages used by the Sage Pay Now gateway.
 	 *
 	 * @since 1.0.0
 	 */
@@ -636,54 +624,54 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		global $woocommerce;
 		//// Create user agent string
 		// User agent constituents (for cURL)
-		define( 'PF_SOFTWARE_NAME', 'WooCommerce' );
-		define( 'PF_SOFTWARE_VER', $woocommerce->version );
-		define( 'PF_MODULE_NAME', 'WooCommerce-PayFast-Free' );
-		define( 'PF_MODULE_VER', $this->version );
+		define( 'PN_SOFTWARE_NAME', 'WooCommerce' );
+		define( 'PN_SOFTWARE_VER', $woocommerce->version );
+		define( 'PN_MODULE_NAME', 'WooCommerce-PayNow-Free' );
+		define( 'PN_MODULE_VER', $this->version );
 
 		// Features
 		// - PHP
-		$pfFeatures = 'PHP '. phpversion() .';';
+		$pnFeatures = 'PHP '. phpversion() .';';
 
 		// - cURL
 		if( in_array( 'curl', get_loaded_extensions() ) )
 		{
-		    define( 'PF_CURL', '' );
-		    $pfVersion = curl_version();
-		    $pfFeatures .= ' curl '. $pfVersion['version'] .';';
+		    define( 'PN_CURL', '' );
+		    $pnVersion = curl_version();
+		    $pnFeatures .= ' curl '. $pnVersion['version'] .';';
 		}
 		else
-		    $pfFeatures .= ' nocurl;';
+		    $pnFeatures .= ' nocurl;';
 
 		// Create user agrent
-		define( 'PF_USER_AGENT', PF_SOFTWARE_NAME .'/'. PF_SOFTWARE_VER .' ('. trim( $pfFeatures ) .') '. PF_MODULE_NAME .'/'. PF_MODULE_VER );
+		define( 'PN_USER_AGENT', PN_SOFTWARE_NAME .'/'. PN_SOFTWARE_VER .' ('. trim( $pnFeatures ) .') '. PN_MODULE_NAME .'/'. PN_MODULE_VER );
 
 		// General Defines
-		define( 'PF_TIMEOUT', 15 );
-		define( 'PF_EPSILON', 0.01 );
+		define( 'PN_TIMEOUT', 15 );
+		define( 'PN_EPSILON', 0.01 );
 
 		// Messages
 		    // Error
-		define( 'PF_ERR_AMOUNT_MISMATCH', __( 'Amount mismatch', 'woothemes' ) );
-		define( 'PF_ERR_BAD_ACCESS', __( 'Bad access of page', 'woothemes' ) );
-		define( 'PF_ERR_BAD_SOURCE_IP', __( 'Bad source IP address', 'woothemes' ) );
-		define( 'PF_ERR_CONNECT_FAILED', __( 'Failed to connect to PayFast', 'woothemes' ) );
-		define( 'PF_ERR_INVALID_SIGNATURE', __( 'Security signature mismatch', 'woothemes' ) );		
-		define( 'PF_ERR_NO_SESSION', __( 'No saved session found for ITN transaction', 'woothemes' ) );
-		define( 'PF_ERR_ORDER_ID_MISSING_URL', __( 'Order ID not present in URL', 'woothemes' ) );
-		define( 'PF_ERR_ORDER_ID_MISMATCH', __( 'Order ID mismatch', 'woothemes' ) );
-		define( 'PF_ERR_ORDER_INVALID', __( 'This order ID is invalid', 'woothemes' ) );
-		define( 'PF_ERR_ORDER_NUMBER_MISMATCH', __( 'Order Number mismatch', 'woothemes' ) );
-		define( 'PF_ERR_ORDER_PROCESSED', __( 'This order has already been processed', 'woothemes' ) );
-		define( 'PF_ERR_PDT_FAIL', __( 'PDT query failed', 'woothemes' ) );
-		define( 'PF_ERR_PDT_TOKEN_MISSING', __( 'PDT token not present in URL', 'woothemes' ) );
-		define( 'PF_ERR_SESSIONID_MISMATCH', __( 'Session ID mismatch', 'woothemes' ) );
-		define( 'PF_ERR_UNKNOWN', __( 'Unkown error occurred', 'woothemes' ) );
+		define( 'PN_ERR_AMOUNT_MISMATCH', __( 'Amount mismatch', 'woothemes' ) );
+		define( 'PN_ERR_BAD_ACCESS', __( 'Bad access of page', 'woothemes' ) );
+		define( 'PN_ERR_BAD_SOURCE_IP', __( 'Bad source IP address', 'woothemes' ) );
+		define( 'PN_ERR_CONNECT_FAILED', __( 'Failed to connect to Sage Pay Now', 'woothemes' ) );
+		define( 'PN_ERR_INVALID_SIGNATURE', __( 'Security signature mismatch', 'woothemes' ) );		
+		define( 'PN_ERR_NO_SESSION', __( 'No saved session found for ITN transaction', 'woothemes' ) );
+		define( 'PN_ERR_ORDER_ID_MISSING_URL', __( 'Order ID not present in URL', 'woothemes' ) );
+		define( 'PN_ERR_ORDER_ID_MISMATCH', __( 'Order ID mismatch', 'woothemes' ) );
+		define( 'PN_ERR_ORDER_INVALID', __( 'This order ID is invalid', 'woothemes' ) );
+		define( 'PN_ERR_ORDER_NUMBER_MISMATCH', __( 'Order Number mismatch', 'woothemes' ) );
+		define( 'PN_ERR_ORDER_PROCESSED', __( 'This order has already been processed', 'woothemes' ) );
+		define( 'PN_ERR_PDT_FAIL', __( 'PDT query failed', 'woothemes' ) );
+		define( 'PN_ERR_PDT_TOKEN_MISSING', __( 'PDT token not present in URL', 'woothemes' ) );
+		define( 'PN_ERR_SESSIONID_MISMATCH', __( 'Session ID mismatch', 'woothemes' ) );
+		define( 'PN_ERR_UNKNOWN', __( 'Unkown error occurred', 'woothemes' ) );
 
 		    // General
-		define( 'PF_MSG_OK', __( 'Payment was successful', 'woothemes' ) );
-		define( 'PF_MSG_FAILED', __( 'Payment has failed', 'woothemes' ) );
-		define( 'PF_MSG_PENDING',
+		define( 'PN_MSG_OK', __( 'Payment was successful', 'woothemes' ) );
+		define( 'PN_MSG_FAILED', __( 'Payment has failed', 'woothemes' ) );
+		define( 'PN_MSG_PENDING',
 		    __( 'The payment is pending. Please note, you will receive another Instant', 'woothemes' ).
 		    __( ' Transaction Notification when the payment status changes to', 'woothemes' ).
 		    __( ' "Completed", or "Failed"', 'woothemes' ) );
@@ -722,109 +710,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	} // End log()
 
 	/**
-	 * validate_signature()
-	 *
-	 * Validate the signature against the returned data.
-	 *
-	 * @param array $data
-	 * @param string $signature
-	 * @since 1.0.0
-	 */
-
-	function validate_signature ( $data, $signature ) {
-
-	    $result = ( $data['signature'] == $signature );
-
-	    $this->log( 'Signature = '. ( $result ? 'valid' : 'invalid' ) );
-
-	    return( $result );
-	} // End validate_signature()
-
-	/**
-	 * validate_ip()
-	 *
-	 * Validate the IP address to make sure it's coming from PayFast.
-	 *
-	 * @param array $data
-	 * @since 1.0.0
-	 */
-
-	function validate_ip( $sourceIP ) {
-	    // Variable initialization
-	    $validHosts = array(
-	        'www.payfast.co.za',
-	        'sandbox.payfast.co.za',
-	        'w1w.payfast.co.za',
-	        'w2w.payfast.co.za',
-	        );
-
-	    $validIps = array();
-
-	    foreach( $validHosts as $pfHostname ) {
-	        $ips = gethostbynamel( $pfHostname );
-
-	        if( $ips !== false )
-	            $validIps = array_merge( $validIps, $ips );
-	    }
-
-	    // Remove duplicates
-	    $validIps = array_unique( $validIps );
-
-	    $this->log( "Valid IPs:\n". print_r( $validIps, true ) );
-
-	    if( in_array( $sourceIP, $validIps ) ) {
-	        return( true );
-	    } else {
-	        return( false );
-	    }
-	} // End validate_ip()
-
-	/**
-	 * validate_response_data()
-	 *
-	 * @param $pfHost String Hostname to use
-	 * @param $pfParamString String Parameter string to send
-	 * @param $proxy String Address of proxy to use or NULL if no proxy
-	 * @since 1.0.0
-	 */
-	function validate_response_data( $pfParamString, $pfProxy = null ) {
-		global $woocommerce;
-	    $this->log( 'Host = '. $this->validate_url );
-	    $this->log( 'Params = '. print_r( $pfParamString, true ) );
-
-		if ( ! is_array( $pfParamString ) ) { return false; }
-
-		$post_data = $pfParamString;
-
-		$url = $this->validate_url;
-
-		$response = wp_remote_post( $url, array(
-       				'method' => 'POST',
-        			'body' => $post_data,
-        			'timeout' => 70,
-        			'sslverify' => true,
-        			'user-agent' => PF_USER_AGENT //'WooCommerce/' . $woocommerce->version . '; ' . get_site_url()
-    			));
-
-		if ( is_wp_error( $response ) ) throw new Exception( __( 'There was a problem connecting to the payment gateway.', 'woothemes' ) );
-
-		if( empty( $response['body'] ) ) throw new Exception( __( 'Empty PayFast response.', 'woothemes' ) );
-
-		parse_str( $response['body'], $parsed_response );
-
-		$response = $parsed_response;
-
-	    $this->log( "Response:\n". print_r( $response, true ) );
-
-	    // Interpret Response
-	    if ( is_array( $response ) && in_array( 'VALID', array_keys( $response ) ) ) {
-	    	return true;
-	    } else {
-	    	return false;
-	    }
-	} // End validate_responses_data()
-
-	/**
 	 * amounts_equal()
 	 *
 	 * Checks to see whether the given amounts are equal using a proper floating
@@ -833,13 +718,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * eg. 100.00 is equal to 100.0001
 	 *
-	 * @author Jonathan Smit
 	 * @param $amount1 Float 1st amount for comparison
 	 * @param $amount2 Float 2nd amount for comparison
 	 * @since 1.0.0
 	 */
 	function amounts_equal ( $amount1, $amount2 ) {
-		if( abs( floatval( $amount1 ) - floatval( $amount2 ) ) > PF_EPSILON ) {
+		if( abs( floatval( $amount1 ) - floatval( $amount2 ) ) > PN_EPSILON ) {
 			return( false );
 		} else {
 			return( true );
