@@ -5,12 +5,14 @@ Revision 1.0.1
 
 Introduction
 ------------
+
 Sage Pay South Africa's Pay Now third party gateway integration for WooCommerce.
 
 Installation Instructions
 -------------------------
-Download the files from GitHub to a temporary location on your computer.
-* https://github.com/SagePay/PayNow-WooCommerce/archive/master.zip
+
+Download the files from the location below to a temporary location on your computer:
+* http://woocommerce.gatewaymodules.com/wp-content/plugins/woocommerce-gateway-paynow.zip
 
 Configuration
 -------------
