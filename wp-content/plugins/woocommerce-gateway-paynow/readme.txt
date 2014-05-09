@@ -1,6 +1,6 @@
-=== WooCommerce Pay Now Gateway ===
+=== WooCommerce Sage Pay Now Gateway ===
 
-A payment gateway for Pay Now. A Pay Now merchant account and service key are required for this gateway to function.
+A payment gateway for Sage Pay Now. A Sage Pay Now merchant account and service key are required for this gateway to function.
 
 == Important Note ==
 
