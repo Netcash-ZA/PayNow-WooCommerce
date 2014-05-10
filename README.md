@@ -46,6 +46,9 @@ WooCommerce Steps:
 4. Select "Payment Gateways", "PayNow", and tick "Enable PayNow" and Save Changes.
 5. Enter your Sage Pay Service key
 
+Here is a screenshot of what the osCommerce settings screen for the Sage Pay Now configuration:
+![alt tag](http://woocommerce.gatewaymodules.com/woocommerce_screenshot1.png)
+
 Revision History
 ----------------
 
@@ -53,7 +56,7 @@ Revision History
 ** New documentation
 ** Session had to be transferred back to callback
 
-Tested with WooCommerce version 2.1.8
+Tested with Wordpress 3.9.x and WooCommerce version 2.1.8
 
 Demo Site
 ---------
