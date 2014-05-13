@@ -52,6 +52,7 @@ Here is a screenshot of what the osCommerce settings screen for the Sage Pay Now
 Revision History
 ----------------
 
+* 10 May 2014/1.0.2 Added image to README.md
 * 9 May 2014/1.0.1
 ** New documentation
 ** Session had to be transferred back to callback

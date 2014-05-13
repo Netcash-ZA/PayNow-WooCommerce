@@ -2,10 +2,10 @@
 /*
 	Plugin Name: WooCommerce Pay Now Gateway
 	Plugin URI: http://woocommerce.com/
-	Description: A payment gateway for South African payment system, Pay Now.
-	Version: 1.0
+	Description: A payment gateway for South African payment system, Sage Pay Now.
+	Version: 1.0.1
 	Author: Gateway Modules
-	Author URI: http://gatewaymodules.com/
+	Author URI: http://www.sagepay.co.za/
 	Requires at least: 3.5
 	Tested up to: 3.8
 */
@@ -19,7 +19,8 @@ if ( ! function_exists( 'woothemes_queue_update' ) )
 /**
  * Plugin updates
  */
-woothemes_queue_update( plugin_basename( __FILE__ ), '557bf07293ad916f20c207c6c9cd15ff', '18596' );
+// TODO Obtain product hash and file ID from Matty
+//woothemes_queue_update( plugin_basename( __FILE__ ), '12345678901234567890123456789012', '12345' );
 
 load_plugin_textdomain( 'wc_paynow', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) );
 

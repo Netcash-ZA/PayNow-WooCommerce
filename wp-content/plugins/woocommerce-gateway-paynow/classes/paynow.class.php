@@ -14,7 +14,7 @@
  *
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
-	public $version = '1.0.1';
+	public $version = '1.0.2';
 	public function __construct() {
 		global $woocommerce;
 		
@@ -49,7 +49,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->service_key = $this->settings ['service_key'];
 		
 		$this->url = 'https://paynow.sagepay.co.za/site/paynow.aspx';
-		$this->validate_url = 'https://www.paynow.co.za/eng/query/validate';
+		// TODO Remove validate_url because it's not used
+		//$this->validate_url = 'https://www.paynow.co.za/eng/query/validate';
 		$this->title = $this->settings ['title'];
 		
 		$this->response_url = add_query_arg ( 'wc-api', 'WC_Gateway_PayNow', home_url ( '/' ) );
@@ -127,7 +128,19 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						'type' => 'checkbox',
 						'label' => __ ( 'An email confirmation will be sent from the Pay Now gateway to the client after each transaction.', 'woothemes' ),
 						'default' => 'yes' 
-				) 
+				),
+				'send_debug_email' => array(
+						'title' => __( 'Enable Debug', 'woothemes' ),
+						'type' => 'checkbox',
+						'label' => __( 'Send debug e-mails for transactions and creates a log file in WooCommerce log folder called sagepaynow.log', 'woothemes' ),
+						'default' => 'yes'
+				),
+				'debug_email' => array(
+						'title' => __( 'Who Receives Debug Emails?', 'woothemes' ),
+						'type' => 'text',
+						'description' => __( 'The e-mail address to which debugging error e-mails are sent when debugging is on.', 'woothemes' ),
+						'default' => get_option( 'admin_email' )
+				)
 		);
 	} // End init_form_fields()
 	
@@ -176,16 +189,16 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	public function admin_options() {
-		// Make sure to empty the log file if not in test mode.
+		// Make sure to empty the log file if not in debug mode.
 		// TODO Test mode does not exist so improve the lines below
-		if ($this->settings ['testmode'] != 'yes') {
+		if ($this->settings ['send_debug_email'] != 'yes') {
 			$this->log ( '' );
 			$this->log ( '', true );
 		}
 		
 		?>
 <h3><?php _e( 'Pay Now', 'woothemes' ); ?></h3>
-<p><?php printf( __( 'Sage Pay Now works by sending the user to %sPayNow%s to enter their payment information.', 'woothemes' ), '<a href="http://www.netcash.co.za/sagepay/pay_now_gateway.asp">', '</a>' ); ?></p>
+<p><?php printf( __( 'Pay Now works by sending the user to %sSage Pay Now%s to enter their payment information.', 'woothemes' ), '<a href="http://www.netcash.co.za/sagepay/pay_now_gateway.asp">', '</a>' ); ?></p>
 
 <?php
 		if ('ZAR' == get_option ( 'woocommerce_currency' )) {
@@ -430,15 +443,17 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
 					$order->payment_complete ();
 					$this->log ( 'Note added to order' );
-					if ($this->settings ['testmode'] == 'yes' && $this->settings ['send_debug_email'] == 'yes') {
-						$this->log ( 'Sending e-mail' );
-						$this->log ( "Sending mail" );
-						$subject = "Pay Now IPN on your site";
-						$body = "Hi,\n\n" . "A Pay Now transaction has been completed on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $data ['m_payment_id'] . "\n" . "Pay Now Transaction ID: " . $data ['RequestTrace'] . "\n" . "Pay Now Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status;
+					if ($this->settings ['send_debug_email'] == 'yes') {
+						$this->log ( 'Debug on so sending e-mail' );						
+						$subject = "Sage Pay Now Successful Transaction on your site";
+						$body = "Hi,\n\n" . "A Sage Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $data ['Reference'] . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status;
+						$pathinfo = pathinfo ( __FILE__ );
+						$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
+						$body .= file_get_contents($filename);
 						$this->log ( "Email:" . $body );
 						wp_mail ( $pnDebugEmail, $subject, $body );
 					} else {
-						$this->log ( 'Not sending e-mail' );
+						$this->log ( 'Debug off so not sending email' );
 					}
 					
 					break;
@@ -446,26 +461,21 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				case 'false' :
 					$this->log ( '- Failed, updating status with failed message: ' . $data['Reason'] );
 					
-					// $order->update_status ( 'failed', sprintf ( __ ( 'Payment %s via IPN.', 'woothemes' ), strtolower ( sanitize ( $data ['Reason'] ) ) ) );
 					$order->update_status ( 'failed', sprintf ( __ ( 'Payment %s via IPN.', 'woothemes' ), strtolower ( mysql_real_escape_string ( $data ['Reason'] ) ) ) );
-					$this->log("Checking is mail must be sent");
-					if ($this->settings ['testmode'] == 'yes' && $this->settings ['send_debug_email'] == 'yes') {
-						$this->log("Sending mail that transaction failed.");
-						$subject = "Pay Now IPN Transaction on your site";
-						$body = "Hi,\n\n" . "A failed Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n" . "Sage Pay Now Transaction ID: " . $data ['RequestTrace'] . "\n" . "Sage Pay Now Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status . "\n" . "Sage Pay Now Payment Failure Reason: " . $data ['Reason'];
+					$this->log("Checking if mail must be sent");
+					if ($this->settings ['send_debug_email'] == 'yes') {
+						$this->log("Debug on so sending mail that transaction failed.");
+						$subject = "Sage Pay Now Failed Transaction on your site";
+						$body = "Hi,\n\n" . "A failed Sage Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status . "\n" . "Failure Reason: " . $data ['Reason'];
+						$pathinfo = pathinfo ( __FILE__ );
+						$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
+						$body .= file_get_contents($filename);
 						$this->log ( "Email:" . $body );
 						wp_mail ( $pnDebugEmail, $subject, $body );
 					} else {
 						$this->log("Not sending failed mail.");
 					}					
-					break;
-				// TODO Remove PENDING as never used
-				// case 'PENDING':
-				// $this->log( '- Pending' );
-				
-				// Need to wait for "Completed" before processing
-				// $order->update_status( 'pending', sprintf(__('Payment %s via IPN.', 'woothemes' ), strtolower( mysql_real_escape_string ( $data['Reason'] ) ) ) );
-				// break;
+					break;				
 				
 				default :
 					// If unknown status, do nothing (safest course of action)
@@ -477,11 +487,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		if ($pnError) {
 			$this->log ( 'Error occurred: ' . $pnErrMsg );
 			
-			if ($this->settings ['testmode'] == 'yes' && $this->settings ['send_debug_email'] == 'yes') {
-				$this->log ( 'Sending email notification' );
+			if ($this->settings ['send_debug_email'] == 'yes') {
+				$this->log ( 'Debug on so sending email notification' );
 				
 				// Send an email
-				$subject = "Sage Pay Now IPN error: " . $pnErrMsg;
+				$subject = "Sage Pay Now Processing Error: " . $pnErrMsg;
 				$body = "Hi,\n\n" . "An invalid Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Remote IP Address: " . $_SERVER ['REMOTE_ADDR'] . "\n" . "Remote host name: " . gethostbyaddr ( $_SERVER ['REMOTE_ADDR'] ) . "\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n";
 				if (isset ( $data ['RequestTrace'] ))
 					$body .= "Pay Now RequestTrace: " . $data ['RequestTrace'] . "\n";
@@ -506,11 +516,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					default :
 						break;
 				}
+				$pathinfo = pathinfo ( __FILE__ );
+				$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
+				$body .= file_get_contents($filename);
 				$this->log ( "Sage Pay Now error log body: " . $body );
 				wp_mail ( $pnDebugEmail, $subject, $body );
 			}
 		}
-		$this->log ( "Looks like we're done and pnError = " . $pnError );
+		$this->log ( "Looks like we're done. pnError, if any, = " . $pnError );
 		
 		// Close log
 		$this->log ( '', true );
@@ -656,9 +669,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @since 1.0.0
 	 */
-	function log($message, $close = false) {
-		// TODO Turn off always debugging
-		if ( ( $this->settings['testmode'] != 'yes' && ! is_admin() ) ) { return; }
+	function log($message, $close = false) {		
+		if ( ( $this->settings['send_debug_email'] != 'yes' && ! is_admin() ) ) { return; }
 		static $fh = 0;
 		
 		if ($close) {
@@ -666,16 +678,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		} else {
 			// If file doesn't exist, create it
 			if (! $fh) {
-				$pathinfo = pathinfo ( __FILE__ );
-				$dir = str_replace ( '/classes', '/logs', $pathinfo ['dirname'] );
-				// TODO Remove /tmp/ during production
-				//$dir = "/tmp/";
-				$fh = @fopen ( $dir . '/sagepaynow.log', 'w' );
+				$pathinfo = pathinfo ( __FILE__ );				
+				$dir = $pathinfo['dirname'] . "/../../woocommerce/logs";
+				$fh = @fopen ( $dir . '/sagepaynow.log', 'a+' );
 			}
 			
 			// If file was successfully created
 			if ($fh) {
-				$line = $message . "\n";
+				$line = date( 'Y-m-d H:i:s' ) .' : '. $message . "\n";
 				
 				fwrite ( $fh, $line );
 			}
