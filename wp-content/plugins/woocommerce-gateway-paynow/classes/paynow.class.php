@@ -233,6 +233,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	public function generate_paynow_form($order_id) {
 		global $woocommerce;
 		
+		$this->log("The Pay Now debugger started a new session");		
+		
 		$order = new WC_Order ( $order_id );
 		
 		$shipping_name = explode ( ' ', $order->shipping_method );
@@ -344,6 +346,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function check_ipn_request_is_valid($data) {
 		global $woocommerce;
 		
+		$this->log("A callback was received from Sage Pay Now...");
+				
 		$this->log ( "check_ipn_request_is_valid starting" );
 		
 		$pnError = false;
