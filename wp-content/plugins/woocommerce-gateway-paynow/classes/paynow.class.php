@@ -185,10 +185,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public function admin_options() {
 		// Make sure to empty the log file if not in debug mode.		
-		if ($this->settings ['send_debug_email'] != 'yes') {
-			$this->log ( '' );
-			$this->log ( '', true );
-		}
+// 		if ($this->settings ['send_debug_email'] != 'yes') {
+// 			$this->log ( '' );
+// 			$this->log ( '', true );
+// 		}
 		
 		?>
 <h3><?php _e( 'Pay Now', 'woothemes' ); ?></h3>
@@ -423,17 +423,16 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			}
 		}
 		
-		// Check status and update order
+		// Checking status and updating order
 		if (! $pnError && ! $pnDone) {
-			$this->log ( 'Check status and update order' );
+			$this->log ( 'Checking status and updating order' );
 			
 			if ($order->order_key !== $order_key) {
 				$this->log ( "Order key object: " . $order->order_key );
 				$this->log ( "Order key variable: " . $order_key );
 				$this->log ( "order->order_key != order_key so exiting" );
 				$pnError = true;
-				$pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
-				//exit ();
+				$pnErrMsg = PN_ERR_SESSIONID_MISMATCH;				
 			}
 			
 			switch ($data ['TransactionAccepted']) {
@@ -445,15 +444,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->payment_complete ();
 					$this->log ( 'Note added to order' );
 					if ($this->settings ['send_debug_email'] == 'yes') {
-						$this->log ( 'Debug on so sending e-mail' );						
+						$this->log ( 'Debug on so sending email' );						
 						$subject = "Sage Pay Now Successful Transaction on your site";
-						$body = "Hi,\n\n" . "A Sage Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $data ['Reference'] . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status;
+						$body = "Hi,\n\n" . "A Sage Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status;
 						$pathinfo = pathinfo ( __FILE__ );
 						$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
-						//$body .= file_get_contents($filename);
+						$body .= file_get_contents($filename);
 						//$this->log ( "Email:" . $body );
 						wp_mail ( $pnDebugEmail, $subject, $body );
-						$this->log("Done sending success mail");
+						$this->log("Done sending success email");
+						// Truncate log file
+						$this->log("Success so truncating log file");
+						$this->log ( '', true );
 					} else {
 						$this->log ( 'Debug off so not success sending email' );
 					}
@@ -468,13 +470,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log("Debug on so sending mail that transaction failed.");
 						$subject = "Sage Pay Now Failed Transaction on your site";
-						$body = "Hi,\n\n" . "A failed Sage Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status . "\n" . "Failure Reason: " . $data ['Reason'];
+						$body = "Hi,\n\n" . "A failed Sage Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status . "\n" . "Failure Reason: " . $data ['Reason'];						
 						$pathinfo = pathinfo ( __FILE__ );
 						$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
-						//$body .= file_get_contents($filename);
-						//$this->log ( "Email:" . $body );
+						$body .= "\n\nLog information:\n";
+						$body .= file_get_contents($filename);						
 						wp_mail ( $pnDebugEmail, $subject, $body );
-						$this->log("Done sending failed mail");
+						$this->log("Done sending failed email");
 					} else {
 						$this->log("Debug off so not sending failed email");
 					}					
@@ -521,17 +523,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				}
 				$pathinfo = pathinfo ( __FILE__ );
 				$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
+				$body .= "\n\nLog information:\n";
 				$body .= file_get_contents($filename);
-				$this->log ( "Sage Pay Now error log body: " . $body );
 				wp_mail ( $pnDebugEmail, $subject, $body );
 			}
 		}
 		$this->log ( "Looks like we're done");
 		
-		// Close log
-// 		$this->log ("Attempting to close log");
-// 		$this->log ( '', true );
-// 		$this->log ("Closing log");
 		if ($data['TransactionAccepted'] == 'true') {
 			//wp_redirect($data['Extra1']);
 		}
@@ -543,15 +541,16 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	} // End check_ipn_request_is_valid()
 	
 	/**
-	 * Check Pay Now IPN response.
+	 * Check Pay Now IPN response
+	 * 
+	 * TODO Improve routine to not use ! negative value on return from check_ipn_request_is_valid
+	 * TODO Assign result to variable
+	 * TODO Better error handling instead of just printing '1' 
 	 *
 	 * @since 1.0.0
 	 */
 	function check_ipn_response() {
 		$this->log ( "check_ipn_response starting" );
-		
-		// TODO To see if IPN is received, remove comment below
-		// wp_die( "Sage Pay Now IPN Request Failure", "PayPal IPN", array( 'response' => 200 ) );
 		
 		$_POST = stripslashes_deep ( $_POST );
 		
@@ -560,6 +559,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			do_action ( 'valid-paynow-standard-ipn-request', $_POST );
 		} else {
 			$this->log ("NOT OK:ipn_request_is_valid");
+			// wp_die( "Sage Pay Now IPN Request Failure", "Pay Now IPN", array( 'response' => 200 ) );
 		}
 	} // End check_ipn_response()
 	
@@ -689,7 +689,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			if (! $fh) {
 				$pathinfo = pathinfo ( __FILE__ );				
 				$dir = $pathinfo['dirname'] . "/../../woocommerce/logs";
-				$fh = @fopen ( $dir . '/sagepaynow.log', 'a+' );
+				$fh = @fopen ( $dir . '/sagepaynow.log', 'w' );
 			}
 			
 			// If file was successfully created
