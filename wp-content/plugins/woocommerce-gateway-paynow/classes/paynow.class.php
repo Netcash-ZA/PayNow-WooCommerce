@@ -249,7 +249,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 								
 				// Item details				
 				'p2' => $order_id_unique,
-				'p3' => sprintf ( __ ( '%s order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
+				'p3' => sprintf ( __ ( '%s Order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
 				'p4' => $order->order_total,				
 				
 				// Extra fields
@@ -455,6 +455,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						$this->log("Done sending success email");
 						// Truncate log file
 						$this->log("Success so truncating log file");
+						$fh=fopen($filename, 'w');
+						fclose($fh);
 						$this->log ( '', true );
 					} else {
 						$this->log ( 'Debug off so not success sending email' );
@@ -689,7 +691,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			if (! $fh) {
 				$pathinfo = pathinfo ( __FILE__ );				
 				$dir = $pathinfo['dirname'] . "/../../woocommerce/logs";
-				$fh = @fopen ( $dir . '/sagepaynow.log', 'w' );
+				$fh = @fopen ( $dir . '/sagepaynow.log', 'a+' );
 			}
 			
 			// If file was successfully created
