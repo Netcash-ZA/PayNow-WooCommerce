@@ -14,7 +14,7 @@
  *
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
-	public $version = '1.0.2';
+	public $version = '1.0.4';
 	public function __construct() {
 		global $woocommerce;
 		
@@ -184,8 +184,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	public function admin_options() {
-		// Make sure to empty the log file if not in debug mode.
-		// TODO Test mode does not exist so improve the lines below
+		// Make sure to empty the log file if not in debug mode.		
 		if ($this->settings ['send_debug_email'] != 'yes') {
 			$this->log ( '' );
 			$this->log ( '', true );
@@ -193,7 +192,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		
 		?>
 <h3><?php _e( 'Pay Now', 'woothemes' ); ?></h3>
-<p><?php printf( __( 'Pay Now works by sending the user to %sSage Pay Now%s to enter their payment information.', 'woothemes' ), '<a href="http://www.netcash.co.za/sagepay/pay_now_gateway.asp">', '</a>' ); ?></p>
+<p><?php printf( __( 'Pay Now works by sending the user to %sPay Now%s to enter their payment information.', 'woothemes' ), '<a href="http://www.netcash.co.za/sagepay/pay_now_gateway.asp">', '</a>' ); ?></p>
 
 <?php
 		if ('ZAR' == get_option ( 'woocommerce_currency' )) {
@@ -238,6 +237,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		
 		$shipping_name = explode ( ' ', $order->shipping_method );
 		
+		// Create unique order ID
+		$order_id_unique = $order->id . "_" . date("Ymds");
+		
 		// Construct variables for post
 		$this->data_to_send = array (
 				// Merchant details
@@ -245,15 +247,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				// m2 is Pay Now's internally used Software vendor key
 				'm2' => '24ade73c-98cf-47b3-99be-cc7b867b3080',				
 								
-				// Item details
-				'p4' => $order->order_total,
-				'p2' => $order->order_key,
-				'p3' => sprintf ( __ ( 'New order from %s', 'woothemes' ), get_bloginfo ( 'name' ) ),
+				// Item details				
+				'p2' => $order_id_unique,
+				'p3' => sprintf ( __ ( '%s order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
+				'p4' => $order->order_total,				
 				
 				// Extra fields
 				'm4' => $this->get_return_url ( $order ),
 				'm5' => $order->get_cancel_order_url (),
-				'm6' => $order->id,				
+				'm6' => $order->order_key,				
 				'm10' => 'wc-api=WC_Gateway_PayNow',
 				
 				// Unused but useful reference fields for debugging
@@ -341,7 +343,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function check_ipn_request_is_valid($data) {
 		global $woocommerce;
 		
-		$this->log ( "Checking if IPN request is valid..." );
+		$this->log ( "check_ipn_request_is_valid starting" );
 		
 		$pnError = false;
 		$pnDone = false;
@@ -351,12 +353,16 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$pnDebugEmail = get_option ( 'admin_email' );
 		}
 		
-		$sessionid = $data ['Reference'];
-		$transaction_id = $data ['pn_payment_id'];
+		$sessionid = $data ['Extra3'];
+		$transaction_id = $data ['RequestTrace'];
 		$vendor_name = get_option ( 'blogname' );
 		$vendor_url = home_url ( '/' );
 		
-		$order_id = ( int ) $data ['Extra3'];
+		$order_id = ( int ) $data ['Reference'];
+		// Convert unique reference back to actual order ID
+		$pieces = explode("_", $order_id);
+		$order_id = $pieces[0];
+		
 		$order_key = esc_attr ( $sessionid );
 		$order = new WC_Order ( $order_id );
 		
@@ -372,7 +378,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// Remove the last '&' from the parameter string
 		$data_string = substr ( $data_string, 0, - 1 );
 		
-		$this->log ( "\n" . '----------' . "\n" . 'Pay Now IPN call received' );
+		$this->log ( "\n" . '---------------------' . "\n" . 'Pay Now IPN call received' );
 		
 		// Notify Sage Pay Now that information has been received
 		if (! $pnError && ! $pnDone) {
@@ -382,9 +388,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		
 		// Get data sent by Sage Pay Now
 		if (! $pnError && ! $pnDone) {
-			$this->log ( 'Get posted data' );
-			
-			$this->log ( 'Sage Pay Now Data: ' . print_r ( $data, true ) );
+			$this->log ( 'Pay Now Data from POST: ' . print_r ( $data, true ) );
 			
 			if ($data === false) {
 				$pnError = true;
@@ -395,7 +399,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// Get internal order and verify it hasn't already been processed
 		if (! $pnError && ! $pnDone) {
 			
-			$this->log ( "Purchase:\n" . print_r ( $order, true ) );
+			// $this->log ( "Purchase information: \n" . print_r ( $order, true ) );
 			
 			// Check if order has already been processed
 			if ($order->status == 'completed') {
@@ -413,7 +417,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$pnError = true;
 				$pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
 			}			// Check session ID
-			elseif (strcasecmp ( $data ['Reference'], $order->order_key ) != 0) {
+			elseif (strcasecmp ( $data ['Extra3'], $order->order_key ) != 0) {
 				$pnError = true;
 				$pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
 			}
@@ -427,7 +431,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$this->log ( "Order key object: " . $order->order_key );
 				$this->log ( "Order key variable: " . $order_key );
 				$this->log ( "order->order_key != order_key so exiting" );
-				exit ();
+				$pnError = true;
+				$pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
+				//exit ();
 			}
 			
 			switch ($data ['TransactionAccepted']) {
@@ -444,11 +450,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						$body = "Hi,\n\n" . "A Sage Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $data ['Reference'] . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status;
 						$pathinfo = pathinfo ( __FILE__ );
 						$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
-						$body .= file_get_contents($filename);
-						$this->log ( "Email:" . $body );
+						//$body .= file_get_contents($filename);
+						//$this->log ( "Email:" . $body );
 						wp_mail ( $pnDebugEmail, $subject, $body );
+						$this->log("Done sending success mail");
 					} else {
-						$this->log ( 'Debug off so not sending email' );
+						$this->log ( 'Debug off so not success sending email' );
 					}
 					
 					break;
@@ -456,7 +463,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				case 'false' :
 					$this->log ( '- Failed, updating status with failed message: ' . $data['Reason'] );
 					
-					$order->update_status ( 'failed', sprintf ( __ ( 'Payment %s via IPN.', 'woothemes' ), strtolower ( mysql_real_escape_string ( $data ['Reason'] ) ) ) );
+					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason: "%s".', 'woothemes' ), strtolower ( mysql_real_escape_string ( $data ['Reason'] ) ) ) );
 					$this->log("Checking if mail must be sent");
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log("Debug on so sending mail that transaction failed.");
@@ -464,11 +471,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						$body = "Hi,\n\n" . "A failed Sage Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status . "\n" . "Failure Reason: " . $data ['Reason'];
 						$pathinfo = pathinfo ( __FILE__ );
 						$filename = $pathinfo['dirname'] . "/../../woocommerce/logs/sagepaynow.log";
-						$body .= file_get_contents($filename);
-						$this->log ( "Email:" . $body );
+						//$body .= file_get_contents($filename);
+						//$this->log ( "Email:" . $body );
 						wp_mail ( $pnDebugEmail, $subject, $body );
+						$this->log("Done sending failed mail");
 					} else {
-						$this->log("Not sending failed mail.");
+						$this->log("Debug off so not sending failed email");
 					}					
 					break;				
 				
@@ -500,11 +508,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						break;
 					
 					case PN_ERR_ORDER_ID_MISMATCH :
-						$body .= "Value received : " . $data ['Extra3'] . "\n" . "Value should be: " . $order->id;
+						$body .= "Value received : " . $data ['Reference'] . "\n" . "Value should be: " . $order->id;
 						break;
 					
 					case PN_ERR_SESSION_ID_MISMATCH :
-						$body .= "Value received : " . $data ['Reference'] . "\n" . "Value should be: " . $order->id;
+						$body .= "Value received : " . $data ['Extra3'] . "\n" . "Value should be: " . $order->order_key;
 						break;
 					
 					// For all other errors there is no need to add additional information
@@ -518,19 +526,20 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				wp_mail ( $pnDebugEmail, $subject, $body );
 			}
 		}
-		$this->log ( "Looks like we're done. pnError, if any, = " . $pnError );
+		$this->log ( "Looks like we're done");
 		
 		// Close log
-		$this->log ( '', true );
-		
+// 		$this->log ("Attempting to close log");
+// 		$this->log ( '', true );
+// 		$this->log ("Closing log");
 		if ($data['TransactionAccepted'] == 'true') {
-			wp_redirect($data['Extra1']);
+			//wp_redirect($data['Extra1']);
 		}
 		else {
-			wp_redirect($data['Extra2']);
+			//wp_redirect($data['Extra2']);
 		}
-		
-		//return $pnError;
+		$this->log("Return pnError value of '$pnError'");
+		return $pnError;
 	} // End check_ipn_request_is_valid()
 	
 	/**
@@ -539,14 +548,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	function check_ipn_response() {
-		$this->log ( "check_ipn_response" );
+		$this->log ( "check_ipn_response starting" );
 		
 		// TODO To see if IPN is received, remove comment below
 		// wp_die( "Sage Pay Now IPN Request Failure", "PayPal IPN", array( 'response' => 200 ) );
 		
 		$_POST = stripslashes_deep ( $_POST );
 		
-		if ($this->check_ipn_request_is_valid ( $_POST )) {
+		if (!$this->check_ipn_request_is_valid ( $_POST )) {
 			$this->log ("OK:ipn_request_is_valid");
 			do_action ( 'valid-paynow-standard-ipn-request', $_POST );
 		} else {
@@ -560,13 +569,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	function successful_request($posted) {
-		$this->log("Successful Payment so successful_request is called");
-		if (! isset ( $posted ['Extra3'] ) && ! is_numeric ( $posted ['Extra3'] )) {
-			return false;
-		}
+		$this->log("successful_request is called");		
 		
-		$order_id = ( int ) $posted ['Extra3'];
-		$order_key = esc_attr ( $posted ['Reference'] );
+		$order_id = ( int ) $posted ['Reference'];		
+		// Convert unique reference back to actual order ID
+		$pieces = explode("_", $order_id);
+		$order_id = $pieces[0];
+		
+		$order_key = esc_attr ( $posted ['Extra3'] );
 		$order = new WC_Order ( $order_id );
 		
 		if ($order->order_key !== $order_key) {
@@ -581,18 +591,19 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
 					$order->payment_complete ();
 					break;
-				case 'denied' :
-				case 'expired' :
-				case 'failed' :
-				case 'voided' :
+				case 'false' :
 					// Failed order
-					$order->update_status ( 'failed', sprintf ( __ ( 'Payment %s via IPN.', 'woothemes' ), strtolower ( mysql_real_escape_string ( $posted ['Reason'] ) ) ) );
+					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason1 "%s".', 'woothemes' ), strtolower ( mysql_real_escape_string ( $posted ['Reason'] ) ) ) );
 					break;
+// 				case 'denied' :
+// 				case 'expired' :
+// 				case 'failed' :				
 				default :
 					// Hold order
-					$order->update_status ( 'on-hold', sprintf ( __ ( 'Payment %s via IPN.', 'woothemes' ), strtolower ( mysql_real_escape_string ( $posted ['Reason'] ) ) ) );
+					// TODO Hold order not used
+					$order->update_status ( 'on-hold', sprintf ( __ ( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower ( mysql_real_escape_string ( $posted ['Reason'] ) ) ) );
 					break;
-			} // End SWITCH Statement
+			}
 			
 			wp_redirect ( $this->get_return_url ( $order ) );
 			exit ();
@@ -688,7 +699,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				fwrite ( $fh, $line );
 			}
 		}
-	} // End log()
+	}
 	
 	/**
 	 * amounts_equal()
@@ -711,5 +722,5 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		} else {
 			return (true);
 		}
-	} // End amounts_equal()
+	}
 } // End Class
