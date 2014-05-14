@@ -552,7 +552,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$_POST = stripslashes_deep ( $_POST );
 		
 		if ($this->check_ipn_request_is_valid ( $_POST )) {
+			$this->log ("OK:ipn_request_is_valid");
 			do_action ( 'valid-paynow-standard-ipn-request', $_POST );
+		} else {
+			$this->log ("NOT OK:ipn_request_is_valid");
 		}
 	} // End check_ipn_response()
 	
