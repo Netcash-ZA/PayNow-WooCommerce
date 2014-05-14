@@ -1,14 +1,15 @@
-Sage Pay Now WooCommerce Module
-===============================
+Sage Pay Now WooCommerce Credit Card Payment Module
+===================================================
 
-Revision 1.0.1
+Revision 1.0.3
 
 Introduction
 ------------
+WooCommerce is an open source e-commerce plugin for WordPress.
 
-Sage Pay South Africa's Pay Now third party gateway integration for WooCommerce.
+This is the Sage Pay Now module which gives you the ability to take credit card transactions online.
 
-Installation Instructions
+Download Instructions
 -------------------------
 
 Download the files from the location below to a temporary location on your computer:
@@ -38,13 +39,27 @@ Sage Pay Now Callback
 6. Choose both the following URLs for your Accept and Decline URLs:
 	http://woo_commerce_installation
 
-WooCommerce Steps:
+WordPress and WooCommerce Installation
 
-1. Login to your Wordpress website as admin (wp-admin folder).
-2. Click "Plugins" / "Upload", "Browse", and selected the downloaded file.
-3. Select "WooCommerce" in the admin menu, click on "Settings" and under "General" select "Currency South African Rand" and Save Changes.
-4. Select "Payment Gateways", "PayNow", and tick "Enable PayNow" and Save Changes.
-5. Enter your Sage Pay Service key
+In order to use WooCommerce you need to have a working installation of WordPress.
+
+1. Install WordPress
+2. Log into WordPress as an administrator (wp-admin folder)
+3. Go go to Plugins / Add New
+3. Search for "woocommerce" and once it's found click on 'Install Now'
+4. Activate WooCommerce
+
+Sage Pay Now Plugin Installation and Activation
+
+5. Login to your WordPress website as admin (wp-admin folder)
+6. Click "Plugins" / "Upload", "Browse", and selected the downloaded file
+7. Click 'Install' and Activate the Plugin.
+
+WooCommerce Configuration
+
+8. Select "WooCommerce" in the admin menu, click on "Settings" and under "General" select "Currency South African Rand" and Save Changes.
+9. Select "Payment Gateways", "PayNow", and tick "Enable PayNow" and Save Changes.
+10. Enter your Sage Pay Service key
 
 Here is a screenshot of what the osCommerce settings screen for the Sage Pay Now configuration:
 ![alt tag](http://woocommerce.gatewaymodules.com/woocommerce_screenshot1.png)
@@ -52,6 +67,8 @@ Here is a screenshot of what the osCommerce settings screen for the Sage Pay Now
 Revision History
 ----------------
 
+* 14 May 2014/1.0.4 More detailed setup documentation
+* 13 May 2014/1.0.3 Added debug function with e-mail functionality
 * 10 May 2014/1.0.2 Added image to README.md
 * 9 May 2014/1.0.1
 ** New documentation
