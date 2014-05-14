@@ -247,12 +247,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->data_to_send = array (
 				// Merchant details
 				'm1' => $this->settings ['service_key'],
+				// m2 is Sage Pay Now's internally used Software vendor key
 				'm2' => '24ade73c-98cf-47b3-99be-cc7b867b3080',				
 								
 				// Item details
-				// 'm4' => ltrim( $order->get_order_number(), __( '#', 'hash before order number', 'woothemes' ) ),
 				'p4' => $order->order_total,
-				//'item_name' => get_bloginfo ( 'name' ) . ' purchase, Order ' . $order->get_order_number (),
 				'p2' => $order->order_key,
 				'p3' => sprintf ( __ ( 'New order from %s', 'woothemes' ), get_bloginfo ( 'name' ) ),
 				
@@ -267,6 +266,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'cancel_url' => $order->get_cancel_order_url (),
 				'notify_url' => $this->response_url,
 				
+				// More unused fields useful in debugging
 				'first_name' => $order->billing_first_name,
 				'last_name' => $order->billing_last_name,
 				'email_address' => $order->billing_email

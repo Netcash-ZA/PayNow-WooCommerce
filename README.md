@@ -1,7 +1,5 @@
-Sage Pay Now WooCommerce Credit Card Payment Module
-===================================================
-
-Revision 1.0.3
+Sage Pay Now WooCommerce Credit Card Payment Module 1.0.4
+=========================================================
 
 Introduction
 ------------
@@ -78,8 +76,8 @@ Tested with Wordpress 3.9.x and WooCommerce version 2.1.8
 
 Demo Site
 ---------
-Here is a demo site if you want to see OpenCart and the Sage Pay Now gateway in action:
-http://opencart.gatewaymodules.com
+Here is a demo site if you want to see WooCommerce and the Pay Now gateway in action:
+http://woocommerce.gatewaymodules.com
 
 Issues & Feature Requests
 -------------------------
