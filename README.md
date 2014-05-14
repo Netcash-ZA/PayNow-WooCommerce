@@ -1,4 +1,4 @@
-Sage Pay Now WooCommerce Credit Card Payment Module 1.0.4
+Sage Pay Now WooCommerce Credit Card Payment Module 1.0.5
 =========================================================
 
 Introduction
@@ -65,6 +65,7 @@ Here is a screenshot of what the osCommerce settings screen for the Sage Pay Now
 Revision History
 ----------------
 
+* 14 May 2014/1.0.5 Now using built-in WordPress debugging.
 * 14 May 2014/1.0.4 More detailed setup documentation
 * 13 May 2014/1.0.3 Added debug function with e-mail functionality
 * 10 May 2014/1.0.2 Added image to README.md
@@ -79,6 +80,25 @@ Demo Site
 Here is a demo site if you want to see WooCommerce and the Pay Now gateway in action:
 http://woocommerce.gatewaymodules.com
 
-Issues & Feature Requests
--------------------------
-Please log any issues or feature requests on GitHub or contact Sage Pay South Africa
+Issues / Feedback / Feature Requests
+------------------------------------
+
+Please do the following should you encounter any problems:
+
+* Ensure at Sage that your Accept and Decline URLs are just the site name, without a trialing slash. Do not add the name of any pages.
+For example, if your site is 'www.mysite.co.za', use:
+http://www.mysite.co.za
+WooCommerce will redirect to it's own success and fail pages after updating the order.
+* There are three steps that will enable maximum debugging
+** Enable Debugging in the Pay Now module
+Add the following TWO lines to your wp-config.php:
+** define('WP_DEBUG', true);
+** define('WP_DEBUG_LOG',true);
+
+If you add both these lines a log file will be generated in your wp-content folder called 'debug.log'.
+
+Turn OFF debugging when you are in a production environment.
+
+We welcome your feedback and suggestions.
+
+Please do not hesitate to contact Sage Pay if you have any suggestions or comments or log an issue on GitHub.
