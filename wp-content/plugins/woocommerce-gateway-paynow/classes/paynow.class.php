@@ -49,8 +49,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->service_key = $this->settings ['service_key'];
 		
 		$this->url = 'https://paynow.sagepay.co.za/site/paynow.aspx';
-		// TODO Remove validate_url because it's not used
-		//$this->validate_url = 'https://www.paynow.co.za/eng/query/validate';
+
 		$this->title = $this->settings ['title'];
 		
 		$this->response_url = add_query_arg ( 'wc-api', 'WC_Gateway_PayNow', home_url ( '/' ) );
@@ -59,10 +58,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$this,
 				'check_ipn_response' 
 		) );
-		
-		// Callback URL
-		// See http://docs.woothemes.com/document/wc_api-the-woocommerce-api-callback/
-		// add_action( 'woocommerce_api_callback', 'check_ipn_response' );
 		
 		add_action ( 'valid-paynow-standard-ipn-request', array (
 				$this,
@@ -247,7 +242,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->data_to_send = array (
 				// Merchant details
 				'm1' => $this->settings ['service_key'],
-				// m2 is Sage Pay Now's internally used Software vendor key
+				// m2 is Pay Now's internally used Software vendor key
 				'm2' => '24ade73c-98cf-47b3-99be-cc7b867b3080',				
 								
 				// Item details
