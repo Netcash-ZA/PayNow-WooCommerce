@@ -596,7 +596,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->update_status ( 'on-hold', sprintf ( __ ( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower ( mysql_real_escape_string ( $posted ['Reason'] ) ) ) );
 					break;
 			}
-			
+			$this->log("All good, about to redirect to " . $this->get_return_url ($order));
 			wp_redirect ( $this->get_return_url ( $order ) );
 			exit ();
 		} // End IF Statement
