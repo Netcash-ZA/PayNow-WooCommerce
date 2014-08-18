@@ -1,5 +1,14 @@
-*** Pay Now Changelog ***
+*** Sage Pay Now Changelog ***
 
-2014.03.08 - version 1.0
- * First Release
-2014.04.15 - updated image file
+* 18 Aug 2014/1.0.6 Modified P3 to display client name (#order id)
+                    Updated WordPress to 3.9.2 and WooCommerce to 2.1.12
+* 14 May 2014/1.0.5 Now using built-in WordPress debugging.
+* 14 May 2014/1.0.4 More detailed setup documentation
+* 13 May 2014/1.0.3 Added debug function with e-mail functionality
+* 10 May 2014/1.0.2 Added image to README.md
+* 09 May 2014/1.0.1
+** New documentation
+** Session had to be transferred back to callback
+
+Tested with WordPress 3.9.2 and WooCommerce version 2.1.12
+Tested with WordPress 3.9.x and WooCommerce version 2.1.8
