@@ -246,18 +246,20 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->data_to_send = array (
 				// Merchant details
 				'm1' => $this->settings ['service_key'],
-				// m2 is Pay Now's internally used Software vendor key
+				// m2 is Sage Pay Now internal key to distinguish their various portfolios
 				'm2' => '24ade73c-98cf-47b3-99be-cc7b867b3080',				
 								
 				// Item details				
 				'p2' => $order_id_unique,
-				'p3' => sprintf ( __ ( '%s Order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
+                // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
+				// 'p3' => sprintf ( __ ( '%s Order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
+                'p3' => $order->billing_first_name . ' ' . $order->billing_last_name . ' (order #' . $order_id . ')',
 				'p4' => $order->order_total,				
 				
 				// Extra fields
 				'm4' => $this->get_return_url ( $order ),
 				'm5' => $order->get_cancel_order_url (),
-				'm6' => $order->order_key,				
+				'm6' => $order->order_key,
 				'm10' => 'wc-api=WC_Gateway_PayNow',
 				
 				// Unused but useful reference fields for debugging
