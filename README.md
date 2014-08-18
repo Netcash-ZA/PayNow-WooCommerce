@@ -1,4 +1,4 @@
-Sage Pay Now WooCommerce Credit Card Payment Module 1.0.5
+Sage Pay Now WooCommerce Credit Card Payment Module 1.0.6
 =========================================================
 
 Introduction
@@ -59,21 +59,24 @@ WooCommerce Configuration
 9. Select "Payment Gateways", "PayNow", and tick "Enable PayNow" and Save Changes.
 10. Enter your Sage Pay Service key
 
-Here is a screenshot of what the osCommerce settings screen for the Sage Pay Now configuration:
+Here is a screen shot of what the WooCommerce settings screen for the Sage Pay Now configuration:
 ![alt tag](http://woocommerce.gatewaymodules.com/woocommerce_screenshot1.png)
 
 Revision History
 ----------------
 
+* 18 Aug 2014/1.0.6 Modified P3 to display client name (#order id)
+                    Updated WordPress to 3.9.2 and WooCommerce to 2.1.12
 * 14 May 2014/1.0.5 Now using built-in WordPress debugging.
 * 14 May 2014/1.0.4 More detailed setup documentation
 * 13 May 2014/1.0.3 Added debug function with e-mail functionality
 * 10 May 2014/1.0.2 Added image to README.md
-* 9 May 2014/1.0.1
+* 09 May 2014/1.0.1
 ** New documentation
 ** Session had to be transferred back to callback
 
-Tested with Wordpress 3.9.x and WooCommerce version 2.1.8
+Tested with WordPress 3.9.2 and WooCommerce version 2.1.12
+Tested with WordPress 3.9.x and WooCommerce version 2.1.8
 
 Demo Site
 ---------

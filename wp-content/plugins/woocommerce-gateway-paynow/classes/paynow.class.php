@@ -14,7 +14,7 @@
  *
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
-	public $version = '1.0.4';
+	public $version = '1.0.6';
 	public function __construct() {
 		global $woocommerce;
 		
