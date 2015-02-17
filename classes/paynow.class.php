@@ -448,7 +448,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					
 					// Payment completed
 					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
-					$order->payment_complete ();
+					// $order->payment_complete ();
 					$this->log ( 'Note added to order' );
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log ( 'Debug on so sending email' );						
