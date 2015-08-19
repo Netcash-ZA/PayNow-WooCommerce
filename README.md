@@ -1,4 +1,4 @@
-Sage Pay Now WooCommerce Credit Card Payment Module 1.0.6
+Sage Pay Now WooCommerce Credit Card Payment Module 2.0.0
 =========================================================
 
 Introduction
@@ -37,6 +37,9 @@ Sage Pay Now Callback
 6. Choose both the following URLs for your Accept and Decline URLs:
 	http://www.your_domain_name.co.za
 
+7. Choose both the following URLs for your Notify and Redirect URLs:
+	http://www.your_domain_name.co.za/wp-content/plugins/PayNow-WooCommerce/paynow_callback.php
+
 WordPress and WooCommerce Installation
 
 In order to use WooCommerce you need to have a working installation of WordPress.
@@ -65,6 +68,7 @@ Here is a screen shot of what the WooCommerce settings screen for the Sage Pay N
 Revision History
 ----------------
 
+* 19 Aug 2015/2.0.0 Added additional fields. Allow for retail & EFT payments.
 * 18 Aug 2014/1.0.6 Modified P3 to display client name (#order id)
                     Updated WordPress to 3.9.2 and WooCommerce to 2.1.12
 * 14 May 2014/1.0.5 Now using built-in WordPress debugging.
