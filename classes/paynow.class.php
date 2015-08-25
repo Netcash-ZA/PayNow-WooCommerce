@@ -245,14 +245,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$customerName = "{$order->billing_first_name} {$order->billing_last_name}";
 		$orderID = $order_id;
 		$customerID = $order->user_id;
-		$sageGUID = "TBC";
+		$sageGUID = "7f7a86f8-5642-4595-8824-aa837fc584f2";
 
 		// Construct variables for post
 		$this->data_to_send = array (
 				// Merchant details
 				'm1' => $this->settings ['service_key'],
 				// m2 is Sage Pay Now internal key to distinguish their various portfolios
-				'm2' => '24ade73c-98cf-47b3-99be-cc7b867b3080',
+				'm2' => $sageGUID,
 
 				// Item details
 				'p2' => $order_id_unique,
