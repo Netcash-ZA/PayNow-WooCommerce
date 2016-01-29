@@ -279,6 +279,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				// More unused fields useful in debugging
 				'first_name' => $order->billing_first_name,
 				'last_name' => $order->billing_last_name,
+				'm9' => $order->billing_email,
 				'email_address' => $order->billing_email
 
 		);
