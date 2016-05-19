@@ -614,12 +614,23 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// JavaScript redirect
 			echo "<script>window.location='$order_return_url'</script>";
 			exit ();
+
+		} elseif ($order->status == 'completed') {
+			$order_return_url = $this->get_return_url($order);
+			$this->log("Order already completed. We're redirecting to $order_return_url");
+			// WordPress redirect
+			// wp_redirect ( $order_return_url );
+			// JavaScript redirect
+			echo "<script>window.location='$order_return_url'</script>";
+			exit ();
 		} // End IF Statement
+
 		// This order is already completed
-		$error =  "This order is already completed. Redirecting to cancelled";
+		$error =  "Error. Redirecting to cancelled";
 		$this->log($error);
 		$order->update_status ( 'on-hold', $error );
 		wp_redirect($_POST['Extra2']);
+
 		exit ();
 	}
 
