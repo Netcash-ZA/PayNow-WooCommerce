@@ -10,8 +10,7 @@ This is the Sage Pay Now module which gives you the ability to take credit card 
 Download Instructions
 -------------------------
 
-Download the files from the location below to a temporary location on your computer:
-* http://woocommerce.gatewaymodules.com/wp-content/plugins/woocommerce-gateway-paynow.zip
+Download the files from the location below to a temporary location on your computer.
 
 Configuration
 -------------
@@ -62,9 +61,6 @@ WooCommerce Configuration
 9. Select "Payment Gateways", "PayNow", and tick "Enable PayNow" and Save Changes.
 10. Enter your Sage Pay Service key
 
-Here is a screen shot of what the WooCommerce settings screen for the Sage Pay Now configuration:
-![alt tag](http://woocommerce.gatewaymodules.com/woocommerce_screenshot1.png)
-
 Revision History
 ----------------
 
@@ -81,11 +77,6 @@ Revision History
 
 Tested with WordPress 3.9.2 and WooCommerce version 2.1.12
 Tested with WordPress 3.9.x and WooCommerce version 2.1.8
-
-Demo Site
----------
-Here is a demo site if you want to see WooCommerce and the Pay Now gateway in action:
-http://woocommerce.gatewaymodules.com
 
 Issues / Feedback / Feature Requests
 ------------------------------------

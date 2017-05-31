@@ -10,7 +10,7 @@
  * @author		Gateway Modules
  *
  * Note:
- *  All references to sanitize replace with mysql_real_escape_string
+ *  All references to mysql_real_escape_string replaced with $this->escape()
  *
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
@@ -255,7 +255,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'm2' => $sageGUID,
 
 				// Item details
-				'p2' => $order_id_unique,
+				'p2' => $order_id_unique, // Reference
                 // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
 				// 'p3' => sprintf ( __ ( '%s Order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
                 // 'p3' => $order->billing_first_name . ' ' . $order->billing_last_name . ' (order #' . $order_id . ')',
@@ -263,12 +263,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 				'p3' => "{$customerName} | {$orderID}",
 				'm3' => "$sageGUID",
-				'm4' => "{$customerID}",
+				'm4' => "{$customerID}", // Extra1
 
 				// Extra fields
-				// 'm4' => $this->get_return_url ( $order ),
-				'm5' => $order->get_cancel_order_url (),
-				'm6' => $order->order_key,
+				// 'm4' => $this->get_return_url ( $order ), // Extra1
+				'm5' => $order->get_cancel_order_url (), // Extra2
+				'm6' => $order->order_key, // Extra3
 				'm10' => 'wc-api=WC_Gateway_PayNow',
 
 				// Unused but useful reference fields for debugging
@@ -279,8 +279,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				// More unused fields useful in debugging
 				'first_name' => $order->billing_first_name,
 				'last_name' => $order->billing_last_name,
-				'm9' => $order->billing_email,
-				'email_address' => $order->billing_email
+				'email_address' => $order->billing_email,
+				'm9' => $order->billing_email
+
 
 		);
 
@@ -430,9 +431,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$this->log ( 'Check data against internal order' );
 
 			// Check order amount
-			if (! $this->amounts_equal ( $data ['Amount'], $order->order_total )) {
+			if (! $this->amounts_equal ( $data['Amount'], $order->order_total )) {
 				$pnError = true;
 				$pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
+				$pnErrMsg .= "Recieved: {$data['Amount']} but expected {$order->order_total}";
 			}			// Check session ID
 			elseif (strcasecmp ( $data ['Extra3'], $order->order_key ) != 0) {
 				$pnError = true;
@@ -475,7 +477,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				case 'false' :
 					$this->log ( '- Failed, updating status with failed message: ' . $data['Reason'] );
 
-					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason: "%s".', 'woothemes' ), strtolower ( mysql_real_escape_string ( $data ['Reason'] ) ) ) );
+					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason: "%s".', 'woothemes' ), strtolower ( self::escape ( $data ['Reason'] ) ) ) );
 					$this->log("Checking if mail must be sent");
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log("Debug on so sending mail that transaction failed.");
@@ -549,16 +551,24 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function check_ipn_response() {
 		$this->log ( "check_ipn_response starting" );
 
-		$_POST = stripslashes_deep ( $_POST );
+		$strippedPOST = stripslashes_deep ( $_POST );
 
 		if (!$this->check_ipn_request_is_valid ( $_POST )) {
 			$this->log ("OK:ipn_request_is_valid");
-			do_action ( 'valid-paynow-standard-ipn-request', $_POST );
+			do_action ( 'valid-paynow-standard-ipn-request', $strippedPOST );
 		} else {
 			$error = "System failed checking ipn_request_valid";
 			$this->log ($error);
 			$this->log ("Something went wrong! Redirecting to order cancelled.");
-			$order->update_status ( 'on-hold', $error );
+
+			$order_id = ( int ) $_POST ['Reference'];
+			// Convert unique reference back to actual order ID
+			$pieces = explode("_", $order_id);
+			$order_id = $pieces[0];
+			$order = new WC_Order ( $order_id );
+			if( $order ) {
+				$order->update_status ( 'on-hold', $error );
+			}
 			wp_redirect($_POST['Extra2']);
 		}
 	} // End check_ipn_response()
@@ -597,7 +607,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					break;
 				case 'false' :
 					// Failed order
-					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason1 "%s".', 'woothemes' ), strtolower ( mysql_real_escape_string ( $posted ['Reason'] ) ) ) );
+					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason1 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
 					break;
 // 				case 'denied' :
 // 				case 'expired' :
@@ -605,7 +615,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				default :
 					// Hold order
 					// TODO Hold order not used
-					$order->update_status ( 'on-hold', sprintf ( __ ( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower ( mysql_real_escape_string ( $posted ['Reason'] ) ) ) );
+					$order->update_status ( 'on-hold', sprintf ( __ ( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
 					break;
 			}
 			$order_return_url = $this->get_return_url($order);
@@ -615,12 +625,23 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// JavaScript redirect
 			echo "<script>window.location='$order_return_url'</script>";
 			exit ();
+
+		} elseif ($order->status == 'completed') {
+			$order_return_url = $this->get_return_url($order);
+			$this->log("Order already completed. We're redirecting to $order_return_url");
+			// WordPress redirect
+			// wp_redirect ( $order_return_url );
+			// JavaScript redirect
+			echo "<script>window.location='$order_return_url'</script>";
+			exit ();
 		} // End IF Statement
+
 		// This order is already completed
-		$error =  "This order is already completed. Redirecting to cancelled";
+		$error =  "Error. Redirecting to cancelled";
 		$this->log($error);
 		$order->update_status ( 'on-hold', $error );
 		wp_redirect($_POST['Extra2']);
+
 		exit ();
 	}
 
@@ -738,4 +759,19 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			return (true);
 		}
 	}
+
+	// replace any non-ascii character with its hex code.
+	private static function escape($value) {
+	    $return = '';
+	    for($i = 0; $i < strlen($value); ++$i) {
+	        $char = $value[$i];
+	        $ord = ord($char);
+	        if($char !== "'" && $char !== "\"" && $char !== '\\' && $ord >= 32 && $ord <= 126)
+	            $return .= $char;
+	        else
+	            $return .= '\\x' . dechex($ord);
+	    }
+	    return $return;
+	}
+
 } // End Class
