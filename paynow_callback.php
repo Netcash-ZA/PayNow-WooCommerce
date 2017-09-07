@@ -26,16 +26,25 @@ function pn_get_redirect_url() {
 }
 
 function pnlog($value=''){
-	error_log($value);
+	error_log("[PayNow] {$value}");
 }
 
 /**
  * Check if this is a 'callback' stating the transaction is pending.
  */
 function pn_is_pending() {
+
+	pnlog('Checking if pending: ' . print_r(array(
+		"isset" => (bool) isset($_POST['TransactionAccepted']),
+		"isFalse" => (bool) $_POST['TransactionAccepted'] === 'false',
+		"pendingSet" => (bool) stristr($_POST['Reason'], 'pending') !== false,
+		"pending" => stristr($_POST['Reason'], 'pending'),
+		"reason" => $_POST['Reason'],
+	)), true);
+
 	return isset($_POST['TransactionAccepted'])
-		&& $_POST['TransactionAccepted'] == 'false'
-		&& stristr($_POST['Reason'], 'pending');
+		&& $_POST['TransactionAccepted'] === 'false'
+		&& stristr($_POST['Reason'], 'pending') !== false;
 }
 
 // Load System
@@ -49,7 +58,10 @@ $url_for_redirect = pn_get_redirect_url() . "/my-account/";
 
 pnlog(__FILE__ . " POST: " . print_r($_REQUEST, true) );
 
-if( isset($_POST) && !empty($_POST) && !pn_is_pending() ) {
+$pending = pn_is_pending();
+pnlog(__FILE__ . "IS PENDING? " . ($pending ? 'Yes' : 'No') );
+
+if( isset($_POST) && !empty($_POST) && !$pending ) {
 
 	// This is the notification coming in!
 	// Act as an IPN request and forward request to Credit Card method.
