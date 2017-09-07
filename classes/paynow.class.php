@@ -104,18 +104,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						'title' => __ ( 'Title', 'woothemes' ),
 						'type' => 'text',
 						'description' => __ ( 'This controls the title which the user sees during checkout.', 'woothemes' ),
-						'default' => __ ( 'Sage Pay Now', 'woothemes' )
+						'default' => __ ( 'Secure online Payments via Sage Pay', 'woothemes' )
 				),
 				'description' => array (
 						'title' => __ ( 'Description', 'woothemes' ),
 						'type' => 'text',
 						'description' => __ ( 'This controls the description which the user sees during checkout.', 'woothemes' ),
-						'default' => ''
+						'default' => 'Secure online Payments via Sage Pay'
 				),
 				'service_key' => array (
 						'title' => __ ( 'Service Key', 'woothemes' ),
 						'type' => 'text',
-						'description' => __ ( 'This is the service key, received from Pay Now.', 'woothemes' ),
+						'description' => __ ( 'This is the Pay Now service key, received from the Sage Connect Section on your Sage Pay Account.', 'woothemes' ),
 						'default' => ''
 				),
 				'send_email_confirm' => array (

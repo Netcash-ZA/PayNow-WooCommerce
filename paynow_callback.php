@@ -26,7 +26,7 @@ function pn_get_redirect_url() {
 }
 
 function pnlog($value=''){
-	error_log($value);
+	error_log("[PayNow] {$value}");
 }
 
 // Load System
