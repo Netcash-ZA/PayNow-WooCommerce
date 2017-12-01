@@ -16,6 +16,26 @@ function pn_load_paynow() {
 }
 
 /**
+ * Check if this is a 'offline' payment like EFT or retail
+ */
+function pn_is_offline() {
+
+	/*
+	Returns 2 for EFT
+	Returns 3 for Retail
+	*/
+	$offline_methods = [2, 3];
+
+	$method = isset($_POST['Method']) ? (int) $_POST['Method'] : null;
+	pnlog('Checking if offline: ' . print_r(array(
+		"isset" => (bool) isset($_POST['Method']),
+		"Method" => (int) $_POST['Method'],
+	), true));
+
+	return $method && in_array($method, $offline_methods);
+}
+
+/**
  * Get the URL we'll redirect users to when coming back from the gateway (for when they choose EFT/Retail)
  */
 function pn_get_redirect_url() {
@@ -40,7 +60,10 @@ $url_for_redirect = pn_get_redirect_url() . "/my-account/";
 
 pnlog(__FILE__ . " POST: " . print_r($_REQUEST, true) );
 
-if( isset($_POST) && !empty($_POST) ) {
+$offline = pn_is_offline();
+pnlog(__FILE__ . "IS OFFLINE? " . ($offline ? 'Yes' : 'No') );
+
+if( isset($_POST) && !empty($_POST) && !$offline ) {
 
 	// This is the notification coming in!
 	// Act as an IPN request and forward request to Credit Card method.
