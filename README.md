@@ -34,7 +34,7 @@ Sage Pay Now Gateway Server Configuration Steps:
 Sage Pay Now Callback
 
 6. Choose both the following URLs for your Accept and Decline URLs:
-	http://www.your_domain_name.co.za
+	http://www.your_domain_name.co.za/
 
 7. Choose both the following URLs for your Notify and Redirect URLs:
 	http://www.your_domain_name.co.za/wp-content/plugins/PayNow-WooCommerce/paynow_callback.php
@@ -61,22 +61,6 @@ WooCommerce Configuration
 9. Select "Payment Gateways", "PayNow", and tick "Enable PayNow" and Save Changes.
 10. Enter your Sage Pay Service key
 
-Revision History
-----------------
-
-* 19 Aug 2015/2.0.0 Added additional fields. Allow for retail & EFT payments.
-* 18 Aug 2014/1.0.6 Modified P3 to display client name (#order id)
-                    Updated WordPress to 3.9.2 and WooCommerce to 2.1.12
-* 14 May 2014/1.0.5 Now using built-in WordPress debugging.
-* 14 May 2014/1.0.4 More detailed setup documentation
-* 13 May 2014/1.0.3 Added debug function with e-mail functionality
-* 10 May 2014/1.0.2 Added image to README.md
-* 09 May 2014/1.0.1
-** New documentation
-** Session had to be transferred back to callback
-
-Tested with WordPress 3.9.2 and WooCommerce version 2.1.12
-Tested with WordPress 3.9.x and WooCommerce version 2.1.8
 
 Issues / Feedback / Feature Requests
 ------------------------------------
