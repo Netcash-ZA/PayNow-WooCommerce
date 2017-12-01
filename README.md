@@ -34,7 +34,7 @@ Sage Pay Now Gateway Server Configuration Steps:
 Sage Pay Now Callback
 
 6. Choose both the following URLs for your Accept and Decline URLs:
-	http://www.your_domain_name.co.za
+	http://www.your_domain_name.co.za/
 
 7. Choose both the following URLs for your Notify and Redirect URLs:
 	http://www.your_domain_name.co.za/wp-content/plugins/PayNow-WooCommerce/paynow_callback.php
