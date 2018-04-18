@@ -26,13 +26,16 @@ function pn_is_offline() {
 	*/
 	$offline_methods = [2, 3];
 
+	// If !$accepted, means it's the callback.
+	// If $accepted, and in array, means it's the actual called response
+	$accepted = isset($_POST['TransactionAccepted']) ? $_POST['TransactionAccepted'] == 'true' : false;
 	$method = isset($_POST['Method']) ? (int) $_POST['Method'] : null;
 	pnlog('Checking if offline: ' . print_r(array(
 		"isset" => (bool) isset($_POST['Method']),
 		"Method" => (int) $_POST['Method'],
 	), true));
 
-	return $method && in_array($method, $offline_methods);
+	return !$accepted && in_array($method, $offline_methods);
 }
 
 /**
