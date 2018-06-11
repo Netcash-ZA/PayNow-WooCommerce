@@ -459,8 +459,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$this->log ( '- Complete' );
 
 					// Payment completed
-					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
-					// $order->payment_complete ();
+					$order->add_order_note ( __ ( 'IPN payment request completed', 'woothemes' ) );
+					// $order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason: "%s".', 'woothemes' ), strtolower ( self::escape ( $data ['Reason'] ) ) ) );
+					$order->payment_complete ();
+
 					$this->log ( 'Note added to order' );
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log ( 'Debug on so sending email' );
@@ -597,15 +599,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			exit ();
 		}
 
+		$this->log("order status {$order->status}");
 		if ($order->status !== 'completed') {
 			// We are here so lets check status and do actions
 			switch (strtolower ( $posted ['TransactionAccepted'] )) {
 				case 'true' :
+					$this->log("- completing payment...");
 					// Payment completed
-					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
+					$order->add_order_note ( __ ( 'IPN payment successful', 'woothemes' ) );
 					$order->payment_complete ();
 					break;
 				case 'false' :
+					$this->log("- order failed...");
 					// Failed order
 					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason1 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
 					break;
