@@ -237,14 +237,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$order = new WC_Order ( $order_id );
 
-		$shipping_name = explode ( ' ', $order->shipping_method );
+		$shipping_name = explode ( ' ', $order->get_shipping_method() );
 
 		// Create unique order ID
-		$order_id_unique = $order->id . "_" . date("Ymds");
+		$order_id_unique = $order->get_id() . "_" . date("Ymds");
 
-		$customerName = "{$order->billing_first_name} {$order->billing_last_name}";
+		$customerName = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
 		$orderID = $order_id;
-		$customerID = $order->user_id;
+		$customerID = $order->get_user_id();
 		$sageGUID = "7f7a86f8-5642-4595-8824-aa837fc584f2";
 
 		// Construct variables for post
@@ -258,8 +258,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'p2' => $order_id_unique, // Reference
                 // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
 				// 'p3' => sprintf ( __ ( '%s Order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
-                // 'p3' => $order->billing_first_name . ' ' . $order->billing_last_name . ' (order #' . $order_id . ')',
-				'p4' => $order->order_total,
+                // 'p3' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() . ' (order #' . $order_id . ')',
+				'p4' => $order->get_total(),
 
 				'p3' => "{$customerName} | {$orderID}",
 				'm3' => "$sageGUID",
@@ -268,7 +268,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				// Extra fields
 				// 'm4' => $this->get_return_url ( $order ), // Extra1
 				'm5' => $order->get_cancel_order_url (), // Extra2
-				'm6' => $order->order_key, // Extra3
+				'm6' => $order->get_order_key(), // Extra3
 				'm10' => 'wc-api=WC_Gateway_PayNow',
 
 				// Unused but useful reference fields for debugging
@@ -277,10 +277,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'notify_url' => $this->response_url,
 
 				// More unused fields useful in debugging
-				'first_name' => $order->billing_first_name,
-				'last_name' => $order->billing_last_name,
-				'email_address' => $order->billing_email,
-				'm9' => $order->billing_email
+				'first_name' => $order->get_billing_first_name(),
+				'last_name' => $order->get_billing_last_name(),
+				'email_address' => $order->get_billing_email(),
+				'm9' => $order->get_billing_email()
 
 
 		);
@@ -420,7 +420,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// $this->log ( "Purchase information: \n" . print_r ( $order, true ) );
 
 			// Check if order has already been processed
-			if ($order->status == 'completed') {
+			if ($order->get_status() == 'completed') {
 				$this->log ( 'Order has already been processed' );
 				$pnDone = true;
 			}
@@ -431,12 +431,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$this->log ( 'Check data against internal order' );
 
 			// Check order amount
-			if (! $this->amounts_equal ( $data['Amount'], $order->order_total )) {
+			if (! $this->amounts_equal ( $data['Amount'], $order->get_total() )) {
 				$pnError = true;
 				$pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
-				$pnErrMsg .= "Recieved: {$data['Amount']} but expected {$order->order_total}";
+				$pnErrMsg .= "Recieved: {$data['Amount']} but expected {$order->get_total()}";
 			}			// Check session ID
-			elseif (strcasecmp ( $data ['Extra3'], $order->order_key ) != 0) {
+			elseif (strcasecmp ( $data ['Extra3'], $order->get_order_key() ) != 0) {
 				$pnError = true;
 				$pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
 			}
@@ -446,8 +446,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		if (! $pnError && ! $pnDone) {
 			$this->log ( 'Checking status and updating order' );
 
-			if ($order->order_key !== $order_key) {
-				$this->log ( "Order key object: " . $order->order_key );
+			if ($order->get_order_key() !== $order_key) {
+				$this->log ( "Order key object: " . $order->get_order_key() );
 				$this->log ( "Order key variable: " . $order_key );
 				$this->log ( "order->order_key != order_key so exiting" );
 				$pnError = true;
@@ -465,7 +465,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log ( 'Debug on so sending email' );
 						$subject = "Sage Pay Now Successful Transaction on your site";
-						$body = "Hi,\n\n" . "A Sage Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status;
+						$body = "Hi,\n\n" . "A Sage Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status();
 						wp_mail ( $pnDebugEmail, $subject, $body );
 						$this->log("Done sending success email");
 					} else {
@@ -482,7 +482,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log("Debug on so sending mail that transaction failed.");
 						$subject = "Sage Pay Now Failed Transaction on your site";
-						$body = "Hi,\n\n" . "A failed Sage Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status . "\n" . "Failure Reason: " . $data ['Reason'];
+						$body = "Hi,\n\n" . "A failed Sage Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->get_id() . "\n" . "User ID: " . $order->get_user_id() . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status() . "\n" . "Failure Reason: " . $data ['Reason'];
 						wp_mail ( $pnDebugEmail, $subject, $body );
 						$this->log("Done sending failed email");
 					} else {
@@ -505,7 +505,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 				// Send an email
 				$subject = "Sage Pay Now Processing Error: " . $pnErrMsg;
-				$body = "Hi,\n\n" . "An invalid Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Remote IP Address: " . $_SERVER ['REMOTE_ADDR'] . "\n" . "Remote host name: " . gethostbyaddr ( $_SERVER ['REMOTE_ADDR'] ) . "\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n";
+				$body = "Hi,\n\n" . "An invalid Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Remote IP Address: " . $_SERVER ['REMOTE_ADDR'] . "\n" . "Remote host name: " . gethostbyaddr ( $_SERVER ['REMOTE_ADDR'] ) . "\n" . "Purchase ID: " . $order->get_id() . "\n" . "User ID: " . $order->get_user_id() . "\n";
 				if (isset ( $data ['RequestTrace'] ))
 					$body .= "Pay Now RequestTrace: " . $data ['RequestTrace'] . "\n";
 				if (isset ( $data ['Reason'] ))
@@ -514,15 +514,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 				switch ($pnErrMsg) {
 					case PN_ERR_AMOUNT_MISMATCH :
-						$body .= "Value received : " . $data ['Amount'] . "\n" . "Value should be: " . $order->order_total;
+						$body .= "Value received : " . $data ['Amount'] . "\n" . "Value should be: " . $order->get_total();
 						break;
 
 					case PN_ERR_ORDER_ID_MISMATCH :
-						$body .= "Value received : " . $data ['Reference'] . "\n" . "Value should be: " . $order->id;
+						$body .= "Value received : " . $data ['Reference'] . "\n" . "Value should be: " . $order->get_id();
 						break;
 
 					case PN_ERR_SESSION_ID_MISMATCH :
-						$body .= "Value received : " . $data ['Extra3'] . "\n" . "Value should be: " . $order->order_key;
+						$body .= "Value received : " . $data ['Extra3'] . "\n" . "Value should be: " . $order->get_order_key();
 						break;
 
 					// For all other errors there is no need to add additional information
@@ -589,7 +589,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$order_key = esc_attr ( $posted ['Extra3'] );
 		$order = new WC_Order ( $order_id );
 
-		if ($order->order_key !== $order_key) {
+		if ($order->get_order_key() !== $order_key) {
 			$error =  "Key problem. Redirecting to cancelled";
 			$this->log($error);
 			$order->update_status ( 'on-hold', $error );
@@ -597,7 +597,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			exit ();
 		}
 
-		if ($order->status !== 'completed') {
+		if ($order->get_status() !== 'completed') {
 			// We are here so lets check status and do actions
 			switch (strtolower ( $posted ['TransactionAccepted'] )) {
 				case 'true' :
@@ -626,7 +626,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			echo "<script>window.location='$order_return_url'</script>";
 			exit ();
 
-		} elseif ($order->status == 'completed') {
+		} elseif ($order->get_status() == 'completed') {
 			$order_return_url = $this->get_return_url($order);
 			$this->log("Order already completed. We're redirecting to $order_return_url");
 			// WordPress redirect
