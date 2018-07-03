@@ -192,7 +192,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		?>
 <h3><?php _e( 'Pay Now', 'woothemes' ); ?></h3>
-<p><?php printf( __( 'Pay Now works by sending the user to %sPay Now%s to enter their payment information.', 'woothemes' ), '<a href="http://www.netcash.co.za/sagepay/pay_now_gateway.asp">', '</a>' ); ?></p>
+<p><?php printf( __( 'Pay Now works by sending the user to the secure %sPay Now%s to complete the payment process.', 'woothemes' ), '<a href="https://sagepay.co.za/services/pay-now-gateway/">', '</a>' ); ?></p>
 
 <?php
 		if ('ZAR' == get_option ( 'woocommerce_currency' )) {
