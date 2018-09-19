@@ -1,10 +1,10 @@
 <?php
 /*
 	Plugin Name: WooCommerce Pay Now Gateway
-	Plugin URI: http://woocommerce.com/
+	Plugin URI: https://github.com/SagePay/PayNow-WooCommerce
 	Description: A payment gateway for South African payment system, Sage Pay Now.
-	Version: 2.0.0
-	Author: Gateway Modules
+	Version: 3.0.0
+	Author: Sage Pay
 	Author URI: http://www.sagepay.co.za/
 	Requires at least: 3.5
 	Tested up to: 3.8

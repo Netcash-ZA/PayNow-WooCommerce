@@ -1,4 +1,4 @@
-Sage Pay Now WooCommerce Credit Card Payment Module 2.0.0
+Sage Pay Now WooCommerce Credit Card Payment Module 3.0.0
 =========================================================
 
 Introduction

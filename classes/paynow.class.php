@@ -14,14 +14,23 @@
  *
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
-	public $version = '2.0.0';
+	public $version = '3.0.0';
+
+	private $SOAP_INSTALLED = false;
+
 	public function __construct() {
 		global $woocommerce;
+
+		if(class_exists('SoapClient')) {
+			// We can continue, SOAP is installed
+			$this->SOAP_INSTALLED = true;
+		}
 
 		// $this->notify_url = str_replace( 'https:', 'http:', add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) ) );
 
 		$this->id = 'paynow';
 		$this->method_title = __ ( 'Pay Now', 'woothemes' );
+		$this->method_description = __ ( 'A payment gateway for South African payment system, Sage Pay Now.', 'woothemes' );
 		$this->icon = $this->plugin_url () . '/assets/images/icon.png';
 		$this->has_fields = true;
 		$this->debug_email = get_option ( 'admin_email' );
@@ -67,13 +76,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		/* 1.6.6 */
 		add_action ( 'woocommerce_update_options_payment_gateways', array (
 				$this,
-				'process_admin_options'
+				'custom_process_admin_options'
 		) );
 
 		/* 2.0.0 */
 		add_action ( 'woocommerce_update_options_payment_gateways_' . $this->id, array (
 				$this,
-				'process_admin_options'
+				'custom_process_admin_options'
 		) );
 
 		add_action ( 'woocommerce_receipt_paynow', array (
@@ -81,9 +90,92 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'receipt_page'
 		) );
 
+		if( !$this->SOAP_INSTALLED ) {
+			// Add SOAP notices
+			add_action( 'admin_notices', array(
+				$this,
+				'error_notice_soap'
+			) );
+		}
+
 		// Check if the base currency supports this gateway.
 		if (! $this->is_valid_for_use ())
 			$this->enabled = false;
+	}
+
+	public static function error_notice_soap() {
+		$this->error_notice_general("We've noticed that you <em>do not</em> have the PHP <a href=\"http://php.net/manual/en/book.soap.php\" target=\"_blank\">SOAP extension</a> installed. Without this extension, this module won't function.");
+	}
+
+	public static function error_notice_general($message = '') {
+		?>
+	    <div class="notice notice-error">
+	        <p><strong>[Pay Now WooCommerce]</strong> <?php echo $message; ?></p>
+	    </div>
+	    <?php
+	}
+
+	/**
+     * Processes and saves options.
+     * If there is an error thrown, will continue to save and validate fields, but will leave the erroring field out.
+     * @return bool was anything saved?
+     */
+	public function custom_process_admin_options() {
+
+		// NOTE: Not too sure how to show error messages to user as the 'process_admin_options' method
+		// simply skips errored (return false) fields and continues to save
+		// So, we're adding errors and then showing them (display_errors())
+
+		if( !$this->SOAP_INSTALLED ) {
+			// Can't validate without SOAP.
+			return false;
+		}
+
+		$post_data = $this->get_post_data();
+		$form_fields = $this->get_form_fields();
+
+		// Let's check the account number first. If it's correct, validate the service key.
+		// Otherwise, bail
+		$field_account_number = $form_fields['account_number'];
+		$account_number = $this->get_field_value( 'account_number', $field_account_number, $post_data );
+		if( !$account_number ) {
+			$this->add_error( '<strong>Account Number</strong> An account number is required.' );
+		}
+
+		// Valid account numb
+		$field_service_key = $form_fields['service_key'];
+		$service_key = $this->get_field_value( 'service_key', $field_service_key, $post_data );
+		if( !$service_key ) {
+			$this->add_error( '<strong>Service Key</strong> A service key is required.' );
+		}
+
+		if(empty($this->get_errors())) {
+			// No errors thus far, so Validate Service Keys here
+			require(dirname(__FILE__).'/Sage/Validate.php');
+			$Validator = new SagePay\Validate();
+
+			try {
+				$result = $Validator->validate_service_keys($account_number, [
+					$Validator::SERVICE_ID_PAYNOW => $service_key
+				]);
+
+				if( !is_bool($result[$service_key]) || $result[$service_key] !== true ) {
+					$this->add_error($result[$service_key] ? $result[$service_key] : '<strong>Service Key</strong> could not be validated.');
+				}
+
+			} catch(\Exception $e) {
+				$this->add_error($e->getMessage());
+			}
+		}
+
+		if(!empty($this->get_errors())) {
+			// Errors encountered. Return false.
+			// NOTE: If users get 'Headers already sent issues, remove this line.'
+			$this->display_errors();
+			return false;
+		}
+
+		return parent::process_admin_options();
 	}
 
 	/**
@@ -93,49 +185,55 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	function init_form_fields() {
 		$this->form_fields = array (
-				'enabled' => array (
-						'title' => __ ( 'Enable/Disable', 'woothemes' ),
-						'label' => __ ( 'Enable Pay Now', 'woothemes' ),
-						'type' => 'checkbox',
-						'description' => __ ( 'This controls whether or not this gateway is enabled within WooCommerce.', 'woothemes' ),
-						'default' => 'yes'
-				),
-				'title' => array (
-						'title' => __ ( 'Title', 'woothemes' ),
-						'type' => 'text',
-						'description' => __ ( 'This controls the title which the user sees during checkout.', 'woothemes' ),
-						'default' => __ ( 'Secure online Payments via Sage Pay', 'woothemes' )
-				),
-				'description' => array (
-						'title' => __ ( 'Description', 'woothemes' ),
-						'type' => 'text',
-						'description' => __ ( 'This controls the description which the user sees during checkout.', 'woothemes' ),
-						'default' => 'Secure online Payments via Sage Pay'
-				),
-				'service_key' => array (
-						'title' => __ ( 'Service Key', 'woothemes' ),
-						'type' => 'text',
-						'description' => __ ( 'This is the Pay Now service key, received from the Sage Connect Section on your Sage Pay Account.', 'woothemes' ),
-						'default' => ''
-				),
-				'send_email_confirm' => array (
-						'title' => __ ( 'Send Email Confirmations', 'woothemes' ),
-						'type' => 'checkbox',
-						'label' => __ ( 'An email confirmation will be sent from the Pay Now gateway to the client after each transaction.', 'woothemes' ),
-						'default' => 'yes'
-				),
-				'send_debug_email' => array(
-						'title' => __( 'Enable Debug', 'woothemes' ),
-						'type' => 'checkbox',
-						'label' => __( 'Send debug e-mails for transactions and creates a log file in WooCommerce log folder called sagepaynow.log', 'woothemes' ),
-						'default' => 'yes'
-				),
-				'debug_email' => array(
-						'title' => __( 'Who Receives Debug Emails?', 'woothemes' ),
-						'type' => 'text',
-						'description' => __( 'The e-mail address to which debugging error e-mails are sent when debugging is on.', 'woothemes' ),
-						'default' => get_option( 'admin_email' )
-				)
+			'enabled' => array (
+					'title' => __ ( 'Enable/Disable', 'woothemes' ),
+					'label' => __ ( 'Enable Pay Now', 'woothemes' ),
+					'type' => 'checkbox',
+					'description' => __ ( 'This controls whether or not this gateway is enabled within WooCommerce.', 'woothemes' ),
+					'default' => 'yes'
+			),
+			'title' => array (
+					'title' => __ ( 'Title', 'woothemes' ),
+					'type' => 'text',
+					'description' => __ ( 'This controls the title which the user sees during checkout.', 'woothemes' ),
+					'default' => __ ( 'Secure online Payments via Sage Pay', 'woothemes' )
+			),
+			'description' => array (
+					'title' => __ ( 'Description', 'woothemes' ),
+					'type' => 'text',
+					'description' => __ ( 'This controls the description which the user sees during checkout.', 'woothemes' ),
+					'default' => 'Secure online Payments via Sage Pay'
+			),
+			'account_number' => array (
+					'title' => __ ( 'Account Number', 'woothemes' ),
+					'type' => 'text', // text
+					'description' => __ ( 'This is the Sage Pay Account Number, received from the Sage Pay website.', 'woothemes' ),
+					'default' => ''
+			),
+			'service_key' => array (
+					'title' => __ ( 'Service Key', 'woothemes' ),
+					'type' => 'text', // text
+					'description' => __ ( 'This is the Pay Now service key, received from the Sage Connect Section on your Sage Pay Account.', 'woothemes' ),
+					'default' => ''
+			),
+			'send_email_confirm' => array (
+					'title' => __ ( 'Send Email Confirmations', 'woothemes' ),
+					'type' => 'checkbox',
+					'label' => __ ( 'An email confirmation will be sent from the Pay Now gateway to the client after each transaction.', 'woothemes' ),
+					'default' => 'yes'
+			),
+			'send_debug_email' => array(
+					'title' => __( 'Enable Debug', 'woothemes' ),
+					'type' => 'checkbox',
+					'label' => __( 'Send debug e-mails for transactions and creates a log file in WooCommerce log folder called sagepaynow.log', 'woothemes' ),
+					'default' => 'yes'
+			),
+			'debug_email' => array(
+					'title' => __( 'Who Receives Debug Emails?', 'woothemes' ),
+					'type' => 'text',
+					'description' => __( 'The e-mail address to which debugging error e-mails are sent when debugging is on.', 'woothemes' ),
+					'default' => get_option( 'admin_email' )
+			)
 		);
 	}
 
@@ -186,7 +284,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	public function admin_options() {
 		if ( $this->is_valid_for_use() ) {
             parent::admin_options();
-		} else {
+        } else {
             ?><div class="inline error"><p><strong><?php _e( 'Gateway disabled', 'woocommerce' ); ?></strong>: <?php _e( 'Pay Now does not support your store currency.', 'woocommerce' ); ?></p></div> <?php
         }
 	}
@@ -226,30 +324,31 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// Construct variables for post
 		$this->data_to_send = array (
-				// Merchant details
-				'm1' => $this->settings ['service_key'],
-				// m2 is Sage Pay Now internal key to distinguish their various portfolios
-				'm2' => $sageGUID,
+			// Merchant details
+			'm1' => $this->settings ['service_key'],
+			// m2 is Sage Pay Now internal key to distinguish their various portfolios
+			'm2' => $sageGUID,
 
-				// Item details
-				'p2' => $order_id_unique, // Reference
-                // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
-				'p4' => $order->get_total(),
+			// Item details
+			'p2' => $order_id_unique, // Reference
+            // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
+			'p3' => "{$customerName} ({$orderID})",
+			'p4' => $order->get_total(),
 
-				'p3' => "{$customerName} | {$orderID}",
-				'm3' => "$sageGUID",
-				'm4' => "{$customerID}", // Extra1
+			'm3' => "$sageGUID",
 
-				// Extra fields
-				// 'm4' => $this->get_return_url ( $order ), // Extra1
-				'm5' => $order->get_cancel_order_url (), // Extra2
-				'm6' => $order->get_order_key(), // Extra3
-				'm10' => 'wc-api=WC_Gateway_PayNow',
+			// Extra fields
+			'm4' => "{$customerID}", // Extra1
+			'm5' => $order->get_cancel_order_url (), // Extra2
+			'm6' => $order->get_order_key(), // Extra3
 
-				// Unused but useful reference fields for debugging
-				'return_url' => $this->get_return_url ( $order ),
-				'cancel_url' => $order->get_cancel_order_url (),
-				'notify_url' => $this->response_url,
+			'm9' => $order->get_billing_email(),
+			'm10' => 'wc-api=WC_Gateway_PayNow',
+
+			// Unused but useful reference fields for debugging
+			'return_url' => $this->get_return_url ( $order ),
+			'cancel_url' => $order->get_cancel_order_url (),
+			'notify_url' => $this->response_url,
 		);
 
 		$paynow_args_array = array ();
