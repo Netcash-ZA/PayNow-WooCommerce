@@ -184,35 +184,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	public function admin_options() {
-		// Make sure to empty the log file if not in debug mode.
-// 		if ($this->settings ['send_debug_email'] != 'yes') {
-// 			$this->log ( '' );
-// 			$this->log ( '', true );
-// 		}
-
-		?>
-<h3><?php _e( 'Pay Now', 'woothemes' ); ?></h3>
-<p><?php printf( __( 'Pay Now works by sending the user to the secure %sPay Now%s to complete the payment process.', 'woothemes' ), '<a href="https://sagepay.co.za/services/pay-now-gateway/">', '</a>' ); ?></p>
-
-<?php
-		if ('ZAR' == get_option ( 'woocommerce_currency' )) {
-			?><table class="form-table"><?php
-			// Generate the HTML For the settings form.
-			$this->generate_settings_html ();
-			?></table>
-<!--/.form-table-->
-<?php
+		if ( $this->is_valid_for_use() ) {
+            parent::admin_options();
 		} else {
-			?>
-<div class="inline error">
-	<p>
-		<strong><?php _e( 'Gateway Disabled', 'woothemes' ); ?></strong> <?php echo sprintf( __( 'Choose South African Rands as your store currency in <a href="%s">Pricing Options</a> to enable the Sage Pay Now Gateway.', 'woocommerce' ), admin_url( '?page=woocommerce&tab=catalog' ) ); ?></p>
-</div>
-<?php
-		} // End check currency
-		?>
-    	<?php
-	} // End admin_options()
+            ?><div class="inline error"><p><strong><?php _e( 'Gateway disabled', 'woocommerce' ); ?></strong>: <?php _e( 'Pay Now does not support your store currency.', 'woocommerce' ); ?></p></div> <?php
+        }
+	}
 
 	/**
 	 * There are no payment fields for Sage Pay Now, but we want to show the description if set.
