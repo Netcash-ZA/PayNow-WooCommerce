@@ -137,7 +137,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						'default' => get_option( 'admin_email' )
 				)
 		);
-	} // End init_form_fields()
+	}
 
 	/**
 	 * Get the plugin URL
@@ -153,7 +153,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		} else {
 			return $this->plugin_url = WP_PLUGIN_URL . "/" . plugin_basename ( dirname ( dirname ( __FILE__ ) ) );
 		}
-	} // End plugin_url()
+	}
 
 	/**
 	 * is_valid_for_use()
@@ -175,7 +175,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$is_available = true;
 
 		return $is_available;
-	} // End is_valid_for_use()
+	}
 
 	/**
 	 * Admin Panel Options
@@ -223,7 +223,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		if (isset ( $this->settings ['description'] ) && ('' != $this->settings ['description'])) {
 			echo wpautop ( wptexturize ( $this->settings ['description'] ) );
 		}
-	} // End payment_fields()
+	}
 
 	/**
 	 * Generate the Sage Pay Now button link.
@@ -320,7 +320,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					});
 				</script>
 			</form>';
-	} // End generate_paynow_form()
+	}
 
 	/**
 	 * Process the payment and return the result.
@@ -345,9 +345,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	function receipt_page($order) {
 		echo '<p>' . __ ( 'Thank you for your order, please click the button below to pay with Pay Now.', 'woothemes' ) . '</p>';
-
 		echo $this->generate_paynow_form ( $order );
-	} // End receipt_page()
+	}
 
 	/**
 	 * Check Pay Now IPN validity.
@@ -416,7 +415,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// Get internal order and verify it hasn't already been processed
 		if (! $pnError && ! $pnDone) {
-
 			// $this->log ( "Purchase information: \n" . print_r ( $order, true ) );
 
 			// Check if order has already been processed
@@ -537,14 +535,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$this->log("Returning pnError value of '$pnError'");
 		return $pnError;
-	} // End check_ipn_request_is_valid()
+	}
 
 	/**
 	 * Check Pay Now IPN response
-	 *
-	 * TODO Improve routine to not use ! negative value on return from check_ipn_request_is_valid
-	 * TODO Assign result to variable
-	 * TODO Better error handling instead of just printing '1'
 	 *
 	 * @since 1.0.0
 	 */
@@ -571,7 +565,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			}
 			wp_redirect($_POST['Extra2']);
 		}
-	} // End check_ipn_response()
+	}
 
 	/**
 	 * Successful Payment!
@@ -634,7 +628,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// JavaScript redirect
 			echo "<script>window.location='$order_return_url'</script>";
 			exit ();
-		} // End IF Statement
+		}
 
 		// This order is already completed
 		$error =  "Error. Redirecting to cancelled";
@@ -702,7 +696,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		define ( 'PN_MSG_OK', __ ( 'Payment was successful', 'woothemes' ) );
 		define ( 'PN_MSG_FAILED', __ ( 'Payment has failed', 'woothemes' ) );
 		define ( 'PN_MSG_PENDING', __ ( 'The payment is pending. Please note, you will receive another Instant', 'woothemes' ) . __ ( ' Transaction Notification when the payment status changes to', 'woothemes' ) . __ ( ' "Completed", or "Failed"', 'woothemes' ) );
-	} // End setup_constants()
+	}
 
 	/**
 	 * log()
@@ -760,7 +754,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 	}
 
-	// replace any non-ascii character with its hex code.
+	/**
+	 * replace any non-ascii character with its hex code.
+	 * @param  string $value
+	 * @return string
+	 */
 	private static function escape($value) {
 	    $return = '';
 	    for($i = 0; $i < strlen($value); ++$i) {
@@ -774,4 +772,4 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	    return $return;
 	}
 
-} // End Class
+}
