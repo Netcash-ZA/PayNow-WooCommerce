@@ -257,8 +257,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				// Item details
 				'p2' => $order_id_unique, // Reference
                 // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
-				// 'p3' => sprintf ( __ ( '%s Order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
-                // 'p3' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() . ' (order #' . $order_id . ')',
 				'p4' => $order->get_total(),
 
 				'p3' => "{$customerName} | {$orderID}",
@@ -275,14 +273,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'return_url' => $this->get_return_url ( $order ),
 				'cancel_url' => $order->get_cancel_order_url (),
 				'notify_url' => $this->response_url,
-
-				// More unused fields useful in debugging
-				'first_name' => $order->get_billing_first_name(),
-				'last_name' => $order->get_billing_last_name(),
-				'email_address' => $order->get_billing_email(),
-				'm9' => $order->get_billing_email()
-
-
 		);
 
 		$paynow_args_array = array ();
@@ -292,7 +282,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		$this->log ( "Sage Pay Now form post paynow_args_array: " . print_r ( $paynow_args_array, true ) );
-		//error_log ( "Sage Pay Now form post paynow_args_array: " . print_r ( $paynow_args_array, true ) );
 
 		return '<form action="' . $this->url . '" method="post" id="paynow_payment_form">
 				' . implode ( '', $paynow_args_array ) . '
@@ -709,26 +698,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		if ( ( $this->settings['send_debug_email'] != 'yes' && ! is_admin() ) ) { return; }
 
 		error_log($message);
-
-// 		static $fh = 0;
-
-// 		if ($close) {
-// 			@fclose ( $fh );
-// 		} else {
-// 			// If file doesn't exist, create it
-// 			if (! $fh) {
-// 				$pathinfo = pathinfo ( __FILE__ );
-// 				$dir = $pathinfo['dirname'] . "/../../woocommerce/logs";
-// 				$fh = @fopen ( $dir . '/sagepaynow.log', 'a+' );
-// 			}
-
-// 			// If file was successfully created
-// 			if ($fh) {
-// 				$line = date( 'Y-m-d H:i:s' ) .' : '. $message . "\n";
-
-// 				fwrite ( $fh, $line );
-// 			}
-// 		}
 	}
 
 	/**
