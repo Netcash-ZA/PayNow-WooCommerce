@@ -4,10 +4,10 @@ namespace SagePay;
 
 /**
  * A helper class to interact with the Sage validation API
- * Class Validate
+ * Class PayNowValidator
  * @package SagePay
  */
-class Validate {
+class PayNowValidator {
 
 	const SERVICE_ID_PAYNOW = 14;
 	const SERVICE_ID_CREDITOR_PAYMENTS = 2;
@@ -21,9 +21,19 @@ class Validate {
 	const ACCOUNT_TYPE_TRANSMISSION = 3;
 
     protected $debugging = false;
+    // Default vendor key
     protected $vendorKey = '24ade73c-98cf-47b3-99be-cc7b867b3080';
 
     function __construct() {}
+
+    /**
+     * Set the Software Vendor Key
+     *
+     * @param string $key The Software Vendor Key to use
+     */
+    public function setVendorKey($key) {
+    	$this->vendorKey = $key;
+    }
 
     /**
      * Whether debugging is on or of
@@ -183,7 +193,29 @@ class Validate {
 
         }
 
-        return 'Could not validate the service key.';
+        $sid = $service_info_array[0];
+        return [ $sid['ServiceId'] => 'Could not validate the service key.' ];
+    }
+
+    /**
+     * Validates a paynow service key
+     * @param  string $account_number [description]
+     * @param  string $service_key    [description]
+     *
+     * @return bool|string True on success. An error message on failure
+     */
+    public function validate_paynow_service_key($account_number, $service_key) {
+    	$result = $this->validate_service_keys($account_number, [
+			self::SERVICE_ID_PAYNOW => $service_key
+		]);
+
+		if( !is_bool($result[$service_key]) || $result[$service_key] !== true ) {
+			// An error occurred
+			return $result[$service_key];
+		}
+
+		// Success
+		return true;
     }
 
     static function get_service_key_errors() {

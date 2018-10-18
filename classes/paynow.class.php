@@ -151,18 +151,16 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		if(empty($this->get_errors())) {
 			// No errors thus far, so Validate Service Keys here
-			require(dirname(__FILE__).'/Sage/Validate.php');
-			$Validator = new SagePay\Validate();
+			require(dirname(__FILE__).'/PayNowValidator.php');
+			$Validator = new SagePay\PayNowValidator();
+			$Validator->setVendorKey('7f7a86f8-5642-4595-8824-aa837fc584f2');
 
 			try {
-				$result = $Validator->validate_service_keys($account_number, [
-					$Validator::SERVICE_ID_PAYNOW => $service_key
-				]);
+				$result = $Validator->validate_paynow_service_key($account_number, $service_key);
 
-				if( !is_bool($result[$service_key]) || $result[$service_key] !== true ) {
-					$this->add_error($result[$service_key] ? $result[$service_key] : '<strong>Service Key</strong> could not be validated.');
+				if( $result !== true ) {
+					$this->add_error($result[$service_key] ? $result[$service_key] : "<strong>Service Key</strong> {$result}");
 				}
-
 			} catch(\Exception $e) {
 				$this->add_error($e->getMessage());
 			}
@@ -269,7 +267,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$is_available_currency = in_array ( $user_currency, $this->available_currencies );
 
-		if ($is_available_currency && $this->enabled == 'yes' && $this->settings ['service_key'] != '')
+		if ($is_available_currency && $this->enabled == 'yes')
 			$is_available = true;
 
 		return $is_available;
