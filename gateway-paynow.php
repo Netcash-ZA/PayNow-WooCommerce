@@ -1,11 +1,11 @@
 <?php
 /*
 	Plugin Name: WooCommerce Pay Now Gateway
-	Plugin URI: https://github.com/SagePay/PayNow-WooCommerce
-	Description: A payment gateway for South African payment system, Sage Pay Now.
+	Plugin URI: https://github.com/Netcash/PayNow-WooCommerce
+	Description: A payment gateway for South African payment system, Netcash Pay Now.
 	Version: 3.0.0
-	Author: Sage Pay
-	Author URI: http://www.sagepay.co.za/
+	Author: Netcash
+	Author URI: http://www.netcash.co.za/
 	Requires at least: 3.5
 	Tested up to: 3.8
 */

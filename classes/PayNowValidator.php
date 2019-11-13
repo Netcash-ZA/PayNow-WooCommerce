@@ -1,11 +1,11 @@
 <?php
 
-namespace SagePay;
+namespace Netcash;
 
 /**
  * A helper class to interact with the Sage validation API
  * Class PayNowValidator
- * @package SagePay
+ * @package Netcash
  */
 class PayNowValidator {
 
@@ -45,7 +45,7 @@ class PayNowValidator {
 
 	function soapInit($url = null) {
 		$soap = new \SoapClient(
-			$url ? $url : 'https://ws.sagepay.co.za/niws/niws_validation.svc?wsdl',
+			$url ? $url : 'https://ws.netcash.co.za/niws/niws_validation.svc?wsdl',
 			array(
 				"trace" => 1,
 				'soap_version' => SOAP_1_1,
@@ -55,23 +55,23 @@ class PayNowValidator {
 	}
 
     /**
-     * Get the SagePay host to use for the API
+     * Get the Netcash host to use for the API
      * @param  string $which    For authentication, use 'auth'
      * @return string The host
      */
     private function getHost($which = '') {
         switch( $which ) {
             case 'auth':
-                $host = "https://mobi.sagepay.co.za/"; // authenticate.aspx?key={SagePayUsername}&message={Encrypted xml message}
+                $host = "https://mobi.netcash.co.za/"; // authenticate.aspx?key={NetcashUsername}&message={Encrypted xml message}
                 if( $this->debugging  ) {
-                    $host = "http://mobi.staging.sagepay.co.za:7999/"; // authenticate.aspx?key={SagePayUsername}&message={Encrypted xml message}
+                    $host = "http://mobi.staging.netcash.co.za:7999/"; // authenticate.aspx?key={NetcashUsername}&message={Encrypted xml message}
                 }
                 break;
 
             default:
-                $host = "https://ws.sagepay.co.za/niws/";
+                $host = "https://ws.netcash.co.za/niws/";
                 if( $this->debugging  ) {
-                    $host = "https://ws.sagepay.co.za/niws/";
+                    $host = "https://ws.netcash.co.za/niws/";
                 }
                 break;
         }
@@ -81,8 +81,8 @@ class PayNowValidator {
 
     /**
      * Validates an array of service keys
-     * Docs: https://www.sagepay.co.za/sagepay/partners_developers-technical_documents-sage_connect.asp
-     *       https://ws.sagepay.co.za/niws/niws_partner.svc
+     * Docs: https://www.netcash.co.za/netcash/partners_developers-technical_documents-sage_connect.asp
+     *       https://ws.netcash.co.za/niws/niws_partner.svc
      * @param string $merchant_account  The merchant account
      * @param array  $keys              The keys. ServiceId as key and the ServiceKey as the value
      * @return array An array of boolean or strings. With the Service Key as the key and bool TRUE if success.
@@ -121,7 +121,7 @@ class PayNowValidator {
         ];
 
 	    $soap = new \SoapClient(
-		    'https://ws.sagepay.co.za/niws/niws_partner.svc?wsdl',
+		    'https://ws.netcash.co.za/niws/niws_partner.svc?wsdl',
 		    array(
 			    "trace" => 1,
 			    'soap_version' => SOAP_1_2,
@@ -136,7 +136,7 @@ class PayNowValidator {
             new \SOAPHeader(
                 'http://www.w3.org/2005/08/addressing',
                 'To',
-                'https://ws.sagepay.co.za/NIWS/NIWS_Partner.svc'
+                'https://ws.netcash.co.za/NIWS/NIWS_Partner.svc'
             )
         );
 
@@ -144,7 +144,7 @@ class PayNowValidator {
         $soap->__setSoapHeaders($headers);
         $result = $soap->ValidateServiceKey(['request'=>$xml_arr]);
 
-        // See status codes here: https://www.sagepay.co.za/sagepay/partners_developers-technical_documents-sage_connect.asp
+        // See status codes here: https://www.netcash.co.za/netcash/partners_developers-technical_documents-sage_connect.asp
         if( $result && isset($result->ValidateServiceKeyResult) ) {
 
 	        $accountStatus = $result->ValidateServiceKeyResult->AccountStatus;
@@ -242,7 +242,7 @@ class PayNowValidator {
             '001' => 'Authenticated',
             '103' => 'No active partner found for this Software vendor key',
             '104' => 'No active client found for this Account number',
-            '200' => 'General service error – contact Sage Pay support',
+            '200' => 'General service error – contact Netcash support',
             '201' => 'Account locked out for 10 minutes due to unsuccessful validation',
         );
     }
