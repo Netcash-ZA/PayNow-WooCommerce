@@ -342,6 +342,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 			'm9' => $order->get_billing_email(),
 			'm10' => 'wc-api=WC_Gateway_PayNow',
+			'm14' => '1',
 
 			// Unused but useful reference fields for debugging
 			'return_url' => $this->get_return_url ( $order ),
