@@ -1,8 +1,8 @@
 <?php
 /**
- * Sage Pay Now Payment Gateway
+ * Netcash Pay Now Payment Gateway
  *
- * Provides a Sage Pay Now Payment Gateway.
+ * Provides a Netcash Pay Now Payment Gateway.
  *
  * @class 		woocommerce_paynow
  * @package		WooCommerce
@@ -14,15 +14,24 @@
  *
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
-	public $version = '2.0.0';
+	public $version = '3.0.0';
+
+	private $SOAP_INSTALLED = false;
+
 	public function __construct() {
 		global $woocommerce;
+		if(class_exists('SoapClient')) {
+
+			// We can continue, SOAP is installed
+			$this->SOAP_INSTALLED = true;
+		}
 
 		// $this->notify_url = str_replace( 'https:', 'http:', add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) ) );
 
 		$this->id = 'paynow';
 		$this->method_title = __ ( 'Pay Now', 'woothemes' );
-		$this->icon = $this->plugin_url () . '/assets/images/icon.png';
+		$this->method_description = __ ( 'A payment gateway for South African payment system, Netcash Pay Now.', 'woothemes' );
+		$this->icon = $this->plugin_url () . '/assets/images/netcash.png';
 		$this->has_fields = true;
 		$this->debug_email = get_option ( 'admin_email' );
 
@@ -48,7 +57,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// Setup default merchant data.
 		$this->service_key = $this->settings ['service_key'];
 
-		$this->url = 'https://paynow.sagepay.co.za/site/paynow.aspx';
+		$this->url = 'https://paynow.netcash.co.za/site/paynow.aspx';
 
 		$this->title = $this->settings ['title'];
 
@@ -67,13 +76,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		/* 1.6.6 */
 		add_action ( 'woocommerce_update_options_payment_gateways', array (
 				$this,
-				'process_admin_options'
+				'custom_process_admin_options'
 		) );
 
 		/* 2.0.0 */
 		add_action ( 'woocommerce_update_options_payment_gateways_' . $this->id, array (
 				$this,
-				'process_admin_options'
+				'custom_process_admin_options'
 		) );
 
 		add_action ( 'woocommerce_receipt_paynow', array (
@@ -81,9 +90,90 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'receipt_page'
 		) );
 
+		if( !$this->SOAP_INSTALLED ) {
+			// Add SOAP notices
+			add_action( 'admin_notices', array(
+				$this,
+				'error_notice_soap'
+			) );
+		}
+
 		// Check if the base currency supports this gateway.
 		if (! $this->is_valid_for_use ())
 			$this->enabled = false;
+	}
+
+	public static function error_notice_soap() {
+		$this->error_notice_general("We've noticed that you <em>do not</em> have the PHP <a href=\"http://php.net/manual/en/book.soap.php\" target=\"_blank\">SOAP extension</a> installed. Without this extension, this module won't function.");
+	}
+
+	public static function error_notice_general($message = '') {
+		?>
+	    <div class="notice notice-error">
+	        <p><strong>[Pay Now WooCommerce]</strong> <?php echo $message; ?></p>
+	    </div>
+	    <?php
+	}
+
+	/**
+     * Processes and saves options.
+     * If there is an error thrown, will continue to save and validate fields, but will leave the erroring field out.
+     * @return bool was anything saved?
+     */
+	public function custom_process_admin_options() {
+
+		// NOTE: Not too sure how to show error messages to user as the 'process_admin_options' method
+		// simply skips errored (return false) fields and continues to save
+		// So, we're adding errors and then showing them (display_errors())
+
+		if( !$this->SOAP_INSTALLED ) {
+			// Can't validate without SOAP.
+			return false;
+		}
+
+		$post_data = $this->get_post_data();
+		$form_fields = $this->get_form_fields();
+
+		// Let's check the account number first. If it's correct, validate the service key.
+		// Otherwise, bail
+		$field_account_number = $form_fields['account_number'];
+		$account_number = $this->get_field_value( 'account_number', $field_account_number, $post_data );
+		if( !$account_number ) {
+			$this->add_error( '<strong>Account Number</strong> An account number is required.' );
+	}
+
+		// Valid account numb
+		$field_service_key = $form_fields['service_key'];
+		$service_key = $this->get_field_value( 'service_key', $field_service_key, $post_data );
+		if( !$service_key ) {
+			$this->add_error( '<strong>Service Key</strong> A service key is required.' );
+		}
+
+		if(empty($this->get_errors())) {
+			// No errors thus far, so Validate Service Keys here
+			require(dirname(__FILE__).'/PayNowValidator.php');
+			$Validator = new Netcash\PayNowValidator();
+			$Validator->setVendorKey('7f7a86f8-5642-4595-8824-aa837fc584f2');
+
+			try {
+				$result = $Validator->validate_paynow_service_key($account_number, $service_key);
+
+				if( $result !== true ) {
+					$this->add_error($result[$service_key] ? $result[$service_key] : "<strong>Service Key</strong> {$result}");
+				}
+			} catch(\Exception $e) {
+				$this->add_error($e->getMessage());
+			}
+		}
+
+		if(!empty($this->get_errors())) {
+			// Errors encountered. Return false.
+			// NOTE: If users get 'Headers already sent issues, remove this line.'
+			$this->display_errors();
+			return false;
+		}
+
+		return parent::process_admin_options();
 	}
 
 	/**
@@ -104,18 +194,24 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						'title' => __ ( 'Title', 'woothemes' ),
 						'type' => 'text',
 						'description' => __ ( 'This controls the title which the user sees during checkout.', 'woothemes' ),
-						'default' => __ ( 'Secure online Payments via Sage Pay', 'woothemes' )
+					'default' => __ ( 'Secure online Payments via Netcash', 'woothemes' )
 				),
 				'description' => array (
 						'title' => __ ( 'Description', 'woothemes' ),
 						'type' => 'text',
 						'description' => __ ( 'This controls the description which the user sees during checkout.', 'woothemes' ),
-						'default' => 'Secure online Payments via Sage Pay'
+					'default' => 'Secure online Payments via Netcash'
+			),
+			'account_number' => array (
+					'title' => __ ( 'Account Number', 'woothemes' ),
+					'type' => 'text', // text
+					'description' => __ ( 'This is the Netcash Account Number, received from the Netcash website.', 'woothemes' ),
+					'default' => ''
 				),
 				'service_key' => array (
 						'title' => __ ( 'Service Key', 'woothemes' ),
-						'type' => 'text',
-						'description' => __ ( 'This is the Pay Now service key, received from the Sage Connect Section on your Sage Pay Account.', 'woothemes' ),
+					'type' => 'text', // text
+					'description' => __ ( 'This is the Pay Now service key, received from the Netcash Connect Section on your Netcash Account.', 'woothemes' ),
 						'default' => ''
 				),
 				'send_email_confirm' => array (
@@ -127,7 +223,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'send_debug_email' => array(
 						'title' => __( 'Enable Debug', 'woothemes' ),
 						'type' => 'checkbox',
-						'label' => __( 'Send debug e-mails for transactions and creates a log file in WooCommerce log folder called sagepaynow.log', 'woothemes' ),
+					'label' => __( 'Send debug e-mails for transactions and creates a log file in WooCommerce log folder called netcashnow.log', 'woothemes' ),
 						'default' => 'yes'
 				),
 				'debug_email' => array(
@@ -137,7 +233,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						'default' => get_option( 'admin_email' )
 				)
 		);
-	} // End init_form_fields()
+	}
 
 	/**
 	 * Get the plugin URL
@@ -152,8 +248,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			return $this->plugin_url = str_replace ( 'http://', 'https://', WP_PLUGIN_URL ) . "/" . plugin_basename ( dirname ( dirname ( __FILE__ ) ) );
 		} else {
 			return $this->plugin_url = WP_PLUGIN_URL . "/" . plugin_basename ( dirname ( dirname ( __FILE__ ) ) );
+	}
 		}
-	} // End plugin_url()
 
 	/**
 	 * is_valid_for_use()
@@ -171,11 +267,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$is_available_currency = in_array ( $user_currency, $this->available_currencies );
 
-		if ($is_available_currency && $this->enabled == 'yes' && $this->settings ['service_key'] != '')
+		if ($is_available_currency && $this->enabled == 'yes')
 			$is_available = true;
 
 		return $is_available;
-	} // End is_valid_for_use()
+	}
 
 	/**
 	 * Admin Panel Options
@@ -184,38 +280,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	public function admin_options() {
-		// Make sure to empty the log file if not in debug mode.
-// 		if ($this->settings ['send_debug_email'] != 'yes') {
-// 			$this->log ( '' );
-// 			$this->log ( '', true );
-// 		}
-
-		?>
-<h3><?php _e( 'Pay Now', 'woothemes' ); ?></h3>
-<p><?php printf( __( 'Pay Now works by sending the user to the secure %sPay Now%s to complete the payment process.', 'woothemes' ), '<a href="https://sagepay.co.za/services/pay-now-gateway/">', '</a>' ); ?></p>
-
-<?php
-		if ('ZAR' == get_option ( 'woocommerce_currency' )) {
-			?><table class="form-table"><?php
-			// Generate the HTML For the settings form.
-			$this->generate_settings_html ();
-			?></table>
-<!--/.form-table-->
-<?php
+		if ( $this->is_valid_for_use() ) {
+            parent::admin_options();
 		} else {
-			?>
-<div class="inline error">
-	<p>
-		<strong><?php _e( 'Gateway Disabled', 'woothemes' ); ?></strong> <?php echo sprintf( __( 'Choose South African Rands as your store currency in <a href="%s">Pricing Options</a> to enable the Sage Pay Now Gateway.', 'woocommerce' ), admin_url( '?page=woocommerce&tab=catalog' ) ); ?></p>
-</div>
-<?php
-		} // End check currency
-		?>
-    	<?php
-	} // End admin_options()
+            ?><div class="inline error"><p><strong><?php _e( 'Gateway disabled', 'woocommerce' ); ?></strong>: <?php _e( 'Pay Now does not support your store currency.', 'woocommerce' ); ?></p></div> <?php
+        }
+	}
 
 	/**
-	 * There are no payment fields for Sage Pay Now, but we want to show the description if set.
+	 * There are no payment fields for Netcash Pay Now, but we want to show the description if set.
 	 *
 	 * @since 1.0.0
 	 */
@@ -223,10 +296,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		if (isset ( $this->settings ['description'] ) && ('' != $this->settings ['description'])) {
 			echo wpautop ( wptexturize ( $this->settings ['description'] ) );
 		}
-	} // End payment_fields()
+		}
 
 	/**
-	 * Generate the Sage Pay Now button link.
+	 * Generate the Netcash Pay Now button link.
 	 *
 	 * @since 1.0.0
 	 */
@@ -245,44 +318,36 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$customerName = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
 		$orderID = $order_id;
 		$customerID = $order->get_user_id();
-		$sageGUID = "7f7a86f8-5642-4595-8824-aa837fc584f2";
+		$netcashGUID = "7f7a86f8-5642-4595-8824-aa837fc584f2";
 
 		// Construct variables for post
 		$this->data_to_send = array (
 				// Merchant details
 				'm1' => $this->settings ['service_key'],
-				// m2 is Sage Pay Now internal key to distinguish their various portfolios
-				'm2' => $sageGUID,
+			// m2 is Netcash Pay Now internal key to distinguish their various portfolios
+			'm2' => $netcashGUID,
 
 				// Item details
 				'p2' => $order_id_unique, // Reference
                 // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
-				// 'p3' => sprintf ( __ ( '%s Order #' . $order_id, 'woothemes' ), get_bloginfo ( 'name' ) ),
-                // 'p3' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() . ' (order #' . $order_id . ')',
+			'p3' => "{$customerName} ({$orderID})",
 				'p4' => $order->get_total(),
 
-				'p3' => "{$customerName} | {$orderID}",
-				'm3' => "$sageGUID",
-				'm4' => "{$customerID}", // Extra1
+			'm3' => $netcashGUID,
 
 				// Extra fields
-				// 'm4' => $this->get_return_url ( $order ), // Extra1
+			'm4' => "{$customerID}", // Extra1
 				'm5' => $order->get_cancel_order_url (), // Extra2
 				'm6' => $order->get_order_key(), // Extra3
+
+			'm9' => $order->get_billing_email(),
 				'm10' => 'wc-api=WC_Gateway_PayNow',
+			'm14' => '1',
 
 				// Unused but useful reference fields for debugging
 				'return_url' => $this->get_return_url ( $order ),
 				'cancel_url' => $order->get_cancel_order_url (),
 				'notify_url' => $this->response_url,
-
-				// More unused fields useful in debugging
-				'first_name' => $order->get_billing_first_name(),
-				'last_name' => $order->get_billing_last_name(),
-				'email_address' => $order->get_billing_email(),
-				'm9' => $order->get_billing_email()
-
-
 		);
 
 		$paynow_args_array = array ();
@@ -291,8 +356,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$paynow_args_array [] = '<input type="hidden" name="' . $key . '" value="' . $value . '" />';
 		}
 
-		$this->log ( "Sage Pay Now form post paynow_args_array: " . print_r ( $paynow_args_array, true ) );
-		//error_log ( "Sage Pay Now form post paynow_args_array: " . print_r ( $paynow_args_array, true ) );
+		$this->log ( "Netcash Pay Now form post paynow_args_array: " . print_r ( $paynow_args_array, true ) );
 
 		return '<form action="' . $this->url . '" method="post" id="paynow_payment_form">
 				' . implode ( '', $paynow_args_array ) . '
@@ -301,7 +365,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					jQuery(function(){
 						jQuery("body").block(
 							{
-								message: "<img src=\"' . $woocommerce->plugin_url () . '/assets/images/ajax-loader.gif\" alt=\"Redirecting...\" />' . __ ( 'Thank you for your order. We are now redirecting you to Sage Pay Now to make payment.', 'woothemes' ) . '",
+								message: "<img src=\"' . $woocommerce->plugin_url () . '/assets/images/ajax-loader.gif\" alt=\"Redirecting...\" />' . __ ( 'Thank you for your order. We are now redirecting you to Netcash Pay Now to make payment.', 'woothemes' ) . '",
 								overlayCSS:
 								{
 									background: "#fff",
@@ -320,7 +384,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					});
 				</script>
 			</form>';
-	} // End generate_paynow_form()
+	}
 
 	/**
 	 * Process the payment and return the result.
@@ -345,9 +409,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	function receipt_page($order) {
 		echo '<p>' . __ ( 'Thank you for your order, please click the button below to pay with Pay Now.', 'woothemes' ) . '</p>';
-
 		echo $this->generate_paynow_form ( $order );
-	} // End receipt_page()
+	}
 
 	/**
 	 * Check Pay Now IPN validity.
@@ -359,7 +422,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function check_ipn_request_is_valid($data) {
 		global $woocommerce;
 
-		$this->log("A callback was received from Sage Pay Now...");
+		$this->log("A callback was received from Netcash Pay Now...");
 
 		$this->log ( "check_ipn_request_is_valid starting" );
 
@@ -398,13 +461,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$this->log ( "\n" . '---------------------' . "\n" . 'Pay Now IPN call received' );
 
-		// Notify Sage Pay Now that information has been received
+		// Notify Netcash Pay Now that information has been received
 		if (! $pnError && ! $pnDone) {
 			header ( 'HTTP/1.0 200 OK' );
 			flush ();
 		}
 
-		// Get data sent by Sage Pay Now
+		// Get data sent by Netcash Pay Now
 		if (! $pnError && ! $pnDone) {
 			$this->log ( 'Pay Now Data from POST: ' . print_r ( $data, true ) );
 
@@ -416,7 +479,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// Get internal order and verify it hasn't already been processed
 		if (! $pnError && ! $pnDone) {
-
 			// $this->log ( "Purchase information: \n" . print_r ( $order, true ) );
 
 			// Check if order has already been processed
@@ -466,8 +528,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$this->log ( 'Note added to order' );
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log ( 'Debug on so sending email' );
-						$subject = "Sage Pay Now Successful Transaction on your site";
-						$body = "Hi,\n\n" . "A Sage Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status();
+						$subject = "Netcash Pay Now Successful Transaction on your site";
+						$body = "Hi,\n\n" . "A Netcash Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status();
 						wp_mail ( $pnDebugEmail, $subject, $body );
 						$this->log("Done sending success email");
 					} else {
@@ -483,8 +545,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$this->log("Checking if mail must be sent");
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log("Debug on so sending mail that transaction failed.");
-						$subject = "Sage Pay Now Failed Transaction on your site";
-						$body = "Hi,\n\n" . "A failed Sage Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->id . "\n" . "User ID: " . $order->user_id . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->status . "\n" . "Failure Reason: " . $data ['Reason'];
+						$subject = "Netcash Pay Now Failed Transaction on your site";
+						$body = "Hi,\n\n" . "A failed Netcash Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->get_id() . "\n" . "User ID: " . $order->get_user_id() . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status() . "\n" . "Failure Reason: " . $data ['Reason'];
 						wp_mail ( $pnDebugEmail, $subject, $body );
 						$this->log("Done sending failed email");
 					} else {
@@ -506,7 +568,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$this->log ( 'Debug on so sending email notification' );
 
 				// Send an email
-				$subject = "Sage Pay Now Processing Error: " . $pnErrMsg;
+				$subject = "Netcash Pay Now Processing Error: " . $pnErrMsg;
 				$body = "Hi,\n\n" . "An invalid Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Remote IP Address: " . $_SERVER ['REMOTE_ADDR'] . "\n" . "Remote host name: " . gethostbyaddr ( $_SERVER ['REMOTE_ADDR'] ) . "\n" . "Purchase ID: " . $order->get_id() . "\n" . "User ID: " . $order->get_user_id() . "\n";
 				if (isset ( $data ['RequestTrace'] ))
 					$body .= "Pay Now RequestTrace: " . $data ['RequestTrace'] . "\n";
@@ -539,14 +601,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$this->log("Returning pnError value of '$pnError'");
 		return $pnError;
-	} // End check_ipn_request_is_valid()
+	}
 
 	/**
 	 * Check Pay Now IPN response
-	 *
-	 * TODO Improve routine to not use ! negative value on return from check_ipn_request_is_valid
-	 * TODO Assign result to variable
-	 * TODO Better error handling instead of just printing '1'
 	 *
 	 * @since 1.0.0
 	 */
@@ -572,8 +630,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$order->update_status ( 'on-hold', $error );
 			}
 			wp_redirect($_POST['Extra2']);
+	}
 		}
-	} // End check_ipn_response()
 
 	/**
 	 * Successful Payment!
@@ -639,7 +697,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// JavaScript redirect
 			echo "<script>window.location='$order_return_url'</script>";
 			exit ();
-		} // End IF Statement
+		}
 
 		// This order is already completed
 		$error =  "Error. Redirecting to cancelled";
@@ -653,7 +711,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	/**
 	 * Setup constants.
 	 *
-	 * Setup common values and messages used by the Sage Pay Now gateway.
+	 * Setup common values and messages used by the Netcash Pay Now gateway.
 	 *
 	 * @since 1.0.0
 	 */
@@ -690,7 +748,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		define ( 'PN_ERR_AMOUNT_MISMATCH', __ ( 'Amount mismatch', 'woothemes' ) );
 		define ( 'PN_ERR_BAD_ACCESS', __ ( 'Bad access of page', 'woothemes' ) );
 		define ( 'PN_ERR_BAD_SOURCE_IP', __ ( 'Bad source IP address', 'woothemes' ) );
-		define ( 'PN_ERR_CONNECT_FAILED', __ ( 'Failed to connect to Sage Pay Now', 'woothemes' ) );
+		define ( 'PN_ERR_CONNECT_FAILED', __ ( 'Failed to connect to Netcash Pay Now', 'woothemes' ) );
 		define ( 'PN_ERR_INVALID_SIGNATURE', __ ( 'Security signature mismatch', 'woothemes' ) );
 		define ( 'PN_ERR_NO_SESSION', __ ( 'No saved session found for IPN transaction', 'woothemes' ) );
 		define ( 'PN_ERR_ORDER_ID_MISSING_URL', __ ( 'Order ID not present in URL', 'woothemes' ) );
@@ -707,7 +765,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		define ( 'PN_MSG_OK', __ ( 'Payment was successful', 'woothemes' ) );
 		define ( 'PN_MSG_FAILED', __ ( 'Payment has failed', 'woothemes' ) );
 		define ( 'PN_MSG_PENDING', __ ( 'The payment is pending. Please note, you will receive another Instant', 'woothemes' ) . __ ( ' Transaction Notification when the payment status changes to', 'woothemes' ) . __ ( ' "Completed", or "Failed"', 'woothemes' ) );
-	} // End setup_constants()
+	}
 
 	/**
 	 * log()
@@ -720,26 +778,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		if ( ( $this->settings['send_debug_email'] != 'yes' && ! is_admin() ) ) { return; }
 
 		error_log($message);
-
-// 		static $fh = 0;
-
-// 		if ($close) {
-// 			@fclose ( $fh );
-// 		} else {
-// 			// If file doesn't exist, create it
-// 			if (! $fh) {
-// 				$pathinfo = pathinfo ( __FILE__ );
-// 				$dir = $pathinfo['dirname'] . "/../../woocommerce/logs";
-// 				$fh = @fopen ( $dir . '/sagepaynow.log', 'a+' );
-// 			}
-
-// 			// If file was successfully created
-// 			if ($fh) {
-// 				$line = date( 'Y-m-d H:i:s' ) .' : '. $message . "\n";
-
-// 				fwrite ( $fh, $line );
-// 			}
-// 		}
 	}
 
 	/**
@@ -765,7 +803,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 	}
 
-	// replace any non-ascii character with its hex code.
+	/**
+	 * replace any non-ascii character with its hex code.
+	 * @param  string $value
+	 * @return string
+	 */
 	private static function escape($value) {
 	    $return = '';
 	    for($i = 0; $i < strlen($value); ++$i) {
@@ -779,4 +821,4 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	    return $return;
 	}
 
-} // End Class
+}

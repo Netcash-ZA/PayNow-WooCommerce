@@ -69,6 +69,20 @@ function pn_is_offline() {
 	return !$accepted && in_array($method, $offline_methods);
 }
 
+/**
+ * Get the URL we'll redirect users to when coming back from the gateway (for when they choose EFT/Retail)
+ */
+function pn_get_redirect_url() {
+	// $url_for_redirect = pn_full_url($_SERVER);
+	// $url_for_redirect = str_ireplace(basename(__FILE__), "index.php", $url_for_redirect);
+	$url_for_redirect = get_permalink( get_option('woocommerce_myaccount_page_id') );;
+	return $url_for_redirect;
+}
+
+function pnlog($value=''){
+	error_log("[PayNow] {$value}");
+}
+
 // Load System
 pn_load_system();
 
