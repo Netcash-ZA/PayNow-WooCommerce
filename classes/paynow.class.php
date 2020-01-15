@@ -20,8 +20,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 	public function __construct() {
 		global $woocommerce;
-		if(class_exists('SoapClient')) {
 
+		if(class_exists('SoapClient')) {
 			// We can continue, SOAP is installed
 			$this->SOAP_INSTALLED = true;
 		}
@@ -140,7 +140,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$account_number = $this->get_field_value( 'account_number', $field_account_number, $post_data );
 		if( !$account_number ) {
 			$this->add_error( '<strong>Account Number</strong> An account number is required.' );
-	}
+		}
 
 		// Valid account numb
 		$field_service_key = $form_fields['service_key'];
@@ -183,23 +183,23 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	function init_form_fields() {
 		$this->form_fields = array (
-				'enabled' => array (
-						'title' => __ ( 'Enable/Disable', 'woothemes' ),
-						'label' => __ ( 'Enable Pay Now', 'woothemes' ),
-						'type' => 'checkbox',
-						'description' => __ ( 'This controls whether or not this gateway is enabled within WooCommerce.', 'woothemes' ),
-						'default' => 'yes'
-				),
-				'title' => array (
-						'title' => __ ( 'Title', 'woothemes' ),
-						'type' => 'text',
-						'description' => __ ( 'This controls the title which the user sees during checkout.', 'woothemes' ),
+			'enabled' => array (
+					'title' => __ ( 'Enable/Disable', 'woothemes' ),
+					'label' => __ ( 'Enable Pay Now', 'woothemes' ),
+					'type' => 'checkbox',
+					'description' => __ ( 'This controls whether or not this gateway is enabled within WooCommerce.', 'woothemes' ),
+					'default' => 'yes'
+			),
+			'title' => array (
+					'title' => __ ( 'Title', 'woothemes' ),
+					'type' => 'text',
+					'description' => __ ( 'This controls the title which the user sees during checkout.', 'woothemes' ),
 					'default' => __ ( 'Secure online Payments via Netcash', 'woothemes' )
-				),
-				'description' => array (
-						'title' => __ ( 'Description', 'woothemes' ),
-						'type' => 'text',
-						'description' => __ ( 'This controls the description which the user sees during checkout.', 'woothemes' ),
+			),
+			'description' => array (
+					'title' => __ ( 'Description', 'woothemes' ),
+					'type' => 'text',
+					'description' => __ ( 'This controls the description which the user sees during checkout.', 'woothemes' ),
 					'default' => 'Secure online Payments via Netcash'
 			),
 			'account_number' => array (
@@ -207,31 +207,31 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					'type' => 'text', // text
 					'description' => __ ( 'This is the Netcash Account Number, received from the Netcash website.', 'woothemes' ),
 					'default' => ''
-				),
-				'service_key' => array (
-						'title' => __ ( 'Service Key', 'woothemes' ),
+			),
+			'service_key' => array (
+					'title' => __ ( 'Service Key', 'woothemes' ),
 					'type' => 'text', // text
 					'description' => __ ( 'This is the Pay Now service key, received from the Netcash Connect Section on your Netcash Account.', 'woothemes' ),
-						'default' => ''
-				),
-				'send_email_confirm' => array (
-						'title' => __ ( 'Send Email Confirmations', 'woothemes' ),
-						'type' => 'checkbox',
-						'label' => __ ( 'An email confirmation will be sent from the Pay Now gateway to the client after each transaction.', 'woothemes' ),
-						'default' => 'yes'
-				),
-				'send_debug_email' => array(
-						'title' => __( 'Enable Debug', 'woothemes' ),
-						'type' => 'checkbox',
+					'default' => ''
+			),
+			'send_email_confirm' => array (
+					'title' => __ ( 'Send Email Confirmations', 'woothemes' ),
+					'type' => 'checkbox',
+					'label' => __ ( 'An email confirmation will be sent from the Pay Now gateway to the client after each transaction.', 'woothemes' ),
+					'default' => 'yes'
+			),
+			'send_debug_email' => array(
+					'title' => __( 'Enable Debug', 'woothemes' ),
+					'type' => 'checkbox',
 					'label' => __( 'Send debug e-mails for transactions and creates a log file in WooCommerce log folder called netcashnow.log', 'woothemes' ),
-						'default' => 'yes'
-				),
-				'debug_email' => array(
-						'title' => __( 'Who Receives Debug Emails?', 'woothemes' ),
-						'type' => 'text',
-						'description' => __( 'The e-mail address to which debugging error e-mails are sent when debugging is on.', 'woothemes' ),
-						'default' => get_option( 'admin_email' )
-				)
+					'default' => 'yes'
+			),
+			'debug_email' => array(
+					'title' => __( 'Who Receives Debug Emails?', 'woothemes' ),
+					'type' => 'text',
+					'description' => __( 'The e-mail address to which debugging error e-mails are sent when debugging is on.', 'woothemes' ),
+					'default' => get_option( 'admin_email' )
+			)
 		);
 	}
 
@@ -248,8 +248,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			return $this->plugin_url = str_replace ( 'http://', 'https://', WP_PLUGIN_URL ) . "/" . plugin_basename ( dirname ( dirname ( __FILE__ ) ) );
 		} else {
 			return $this->plugin_url = WP_PLUGIN_URL . "/" . plugin_basename ( dirname ( dirname ( __FILE__ ) ) );
-	}
 		}
+	}
 
 	/**
 	 * is_valid_for_use()
@@ -282,7 +282,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	public function admin_options() {
 		if ( $this->is_valid_for_use() ) {
             parent::admin_options();
-		} else {
+        } else {
             ?><div class="inline error"><p><strong><?php _e( 'Gateway disabled', 'woocommerce' ); ?></strong>: <?php _e( 'Pay Now does not support your store currency.', 'woocommerce' ); ?></p></div> <?php
         }
 	}
@@ -296,7 +296,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		if (isset ( $this->settings ['description'] ) && ('' != $this->settings ['description'])) {
 			echo wpautop ( wptexturize ( $this->settings ['description'] ) );
 		}
-		}
+	}
 
 	/**
 	 * Generate the Netcash Pay Now button link.
@@ -322,32 +322,33 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// Construct variables for post
 		$this->data_to_send = array (
-				// Merchant details
-				'm1' => $this->settings ['service_key'],
+			// Merchant details
+			'm1' => $this->settings ['service_key'],
 			// m2 is Netcash Pay Now internal key to distinguish their various portfolios
 			'm2' => $netcashGUID,
 
-				// Item details
-				'p2' => $order_id_unique, // Reference
-                // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
+			// Item details
+			'p2' => $order_id_unique, // Reference
+            // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
 			'p3' => "{$customerName} ({$orderID})",
-				'p4' => $order->get_total(),
+			'p4' => $order->get_total(),
 
 			'm3' => $netcashGUID,
 
-				// Extra fields
+			// Extra fields
 			'm4' => "{$customerID}", // Extra1
-				'm5' => $order->get_cancel_order_url (), // Extra2
-				'm6' => $order->get_order_key(), // Extra3
+			'm5' => $order->get_cancel_order_url (), // Extra2
+			'm6' => $order->get_order_key(), // Extra3
 
 			'm9' => $order->get_billing_email(),
-				'm10' => 'wc-api=WC_Gateway_PayNow',
-			'm14' => '1',
+			'm10' => 'wc-api=WC_Gateway_PayNow',
 
-				// Unused but useful reference fields for debugging
-				'return_url' => $this->get_return_url ( $order ),
-				'cancel_url' => $order->get_cancel_order_url (),
-				'notify_url' => $this->response_url,
+			// Unused but useful reference fields for debugging
+			'return_url' => $this->get_return_url ( $order ),
+			'cancel_url' => $order->get_cancel_order_url (),
+			'notify_url' => $this->response_url,
+
+			'm14' => '1',
 		);
 
 		$paynow_args_array = array ();
@@ -518,14 +519,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 			switch ($data ['TransactionAccepted']) {
 				case 'true' :
-					$this->log ( '- Accepted' );
+					$this->log ( '- Complete' );
 
 					// Payment completed
-					$order->add_order_note ( __ ( 'IPN payment request completed', 'woothemes' ) );
-					// $order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason: "%s".', 'woothemes' ), strtolower ( self::escape ( $data ['Reason'] ) ) ) );
+					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
 					// $order->payment_complete ();
-
 					$this->log ( 'Note added to order' );
+
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log ( 'Debug on so sending email' );
 						$subject = "Netcash Pay Now Successful Transaction on your site";
@@ -630,8 +630,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$order->update_status ( 'on-hold', $error );
 			}
 			wp_redirect($_POST['Extra2']);
-	}
 		}
+	}
 
 	/**
 	 * Successful Payment!
@@ -657,18 +657,34 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			exit ();
 		}
 
-		$this->log("order status " . $order->get_status());
 		if ($order->get_status() !== 'completed') {
 			// We are here so lets check status and do actions
 			switch (strtolower ( $posted ['TransactionAccepted'] )) {
 				case 'true' :
-					$this->log("- completing payment...");
 					// Payment completed
-					$order->add_order_note ( __ ( 'IPN payment successful', 'woothemes' ) );
+					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
 					$order->payment_complete ();
+
+					if($posted['Method'] == '1') {
+						// It was a CC transaction 
+
+						if(isset($posted['ccHolder'])) {
+							// We have CC detail 
+							$pnCreditCardDetail = "";
+							$pnCreditCardDetail .= "Credit card name: {$posted['ccHolder']} \r\n";
+							$pnCreditCardDetail .= "Credit card number: {$posted['ccMasked']} \r\n";
+							$pnCreditCardDetail .= "Expiry date: {$posted['ccExpiry']} \r\n";
+							$pnCreditCardDetail .= "Card token: {$posted['ccToken']} \r\n";
+							
+							// Add CC detail as note
+							$order->add_order_note ( __ ( "Tokenized credit card detail: \r\n{$pnCreditCardDetail}", 'woothemes' ) );
+						} else {
+							$order->add_order_note ( __ ( "Paid with credit card but tokenized detail was not received.", 'woothemes' ) );
+						}
+					}
+
 					break;
 				case 'false' :
-					$this->log("- order failed...");
 					// Failed order
 					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason1 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
 					break;
