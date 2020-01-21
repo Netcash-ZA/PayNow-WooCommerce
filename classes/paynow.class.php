@@ -220,6 +220,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					'label' => __ ( 'An email confirmation will be sent from the Pay Now gateway to the client after each transaction.', 'woothemes' ),
 					'default' => 'yes'
 			),
+			'do_tokenization' => array(
+					'title' => __( 'Enable Credit Card Tokenization', 'woothemes' ),
+					'type' => 'checkbox',
+					'label' => __( 'If enabled, Netcash will return a Tokenized Credit Card value in the order notes.', 'woothemes' ),
+					'default' => 'no'
+			),
 			'send_debug_email' => array(
 					'title' => __( 'Enable Debug', 'woothemes' ),
 					'type' => 'checkbox',
@@ -320,6 +326,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$customerID = $order->get_user_id();
 		$netcashGUID = "7f7a86f8-5642-4595-8824-aa837fc584f2";
 
+		$tokenize = (bool) $this->settings['do_tokenization'];
+
 		// Construct variables for post
 		$this->data_to_send = array (
 			// Merchant details
@@ -348,7 +356,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			'cancel_url' => $order->get_cancel_order_url (),
 			'notify_url' => $this->response_url,
 
-			'm14' => '1',
+			'm14' => $tokenize ? '1' : '0',
 		);
 
 		$paynow_args_array = array ();
@@ -666,16 +674,16 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->payment_complete ();
 
 					if($posted['Method'] == '1') {
-						// It was a CC transaction 
+						// It was a CC transaction
 
 						if(isset($posted['ccHolder'])) {
-							// We have CC detail 
+							// We have CC detail
 							$pnCreditCardDetail = "";
 							$pnCreditCardDetail .= "Credit card name: {$posted['ccHolder']} \r\n";
 							$pnCreditCardDetail .= "Credit card number: {$posted['ccMasked']} \r\n";
 							$pnCreditCardDetail .= "Expiry date: {$posted['ccExpiry']} \r\n";
 							$pnCreditCardDetail .= "Card token: {$posted['ccToken']} \r\n";
-							
+
 							// Add CC detail as note
 							$order->add_order_note ( __ ( "Tokenized credit card detail: \r\n{$pnCreditCardDetail}", 'woothemes' ) );
 						} else {
