@@ -27,7 +27,7 @@ Netcash Pay Now Gateway Server Configuration Steps:
 1. Log into your Netcash Pay Now Gateway Server configuration page:
 	https://merchant.netcash.co.za/SiteLogin.aspx
 2. Go to Account / Profile
-3. Click Connect
+3. Click NetConnector
 4. Click Pay Now
 5. Make a note of your Service key
 
