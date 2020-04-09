@@ -537,7 +537,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					if ($this->settings ['send_debug_email'] == 'yes') {
 						$this->log ( 'Debug on so sending email' );
 						$subject = "Netcash Pay Now Successful Transaction on your site";
-						$body = "Hi,\n\n" . "A Netcash Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status();
+						$body = "A Netcash Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status();
 						wp_mail ( $pnDebugEmail, $subject, $body );
 						$this->log("Done sending success email");
 					} else {
