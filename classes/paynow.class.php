@@ -319,10 +319,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$shipping_name = explode ( ' ', $order->get_shipping_method() );
 
 		// Create unique order ID
-		$order_id_unique = $order->get_id() . "_" . date("Ymds");
+		$order_id_unique = $order->get_order_number() . "_" . date("Ymds");
 
 		$customerName = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
-		$orderID = $order_id;
 		$customerID = $order->get_user_id();
 		$netcashGUID = "7f7a86f8-5642-4595-8824-aa837fc584f2";
 
@@ -338,7 +337,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// Item details
 			'p2' => $order_id_unique, // Reference
             // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
-			'p3' => "{$customerName} ({$orderID})",
+			'p3' => "{$customerName} ({$order->get_order_number()})",
 			'p4' => $order->get_total(),
 
 			'm3' => $netcashGUID,
