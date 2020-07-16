@@ -318,8 +318,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$shipping_name = explode ( ' ', $order->get_shipping_method() );
 
-		// Create unique order ID
-		$order_id_unique = $order->get_order_number() . "_" . date("Ymds");
+		// Create unique order ID for reference in IPN callback. Use order ID, NOT order number.
+		$order_id_unique = $order->get_id() . "_" . date("Ymds");
 
 		$customerName = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
 		$customerID = $order->get_user_id();
