@@ -664,6 +664,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			exit ();
 		}
 
+		$this->log("- current order status: ".$order->get_status());
+		$order_return_url = $this->get_return_url($order);
+
 		if ($order->get_status() !== 'completed') {
 			// We are here so lets check status and do actions
 			switch (strtolower ( $posted ['TransactionAccepted'] )) {
@@ -694,6 +697,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				case 'false' :
 					// Failed order
 					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason1 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
+
+					$wasCancelled = stristr($posted['Reason'], 'cancelled');
+					if($wasCancelled !== false) {
+						// If the user cancelled, redirect to cancel URL.
+						$this->log("Order cancelled by user.");
+						$order_return_url = html_entity_decode($order->get_cancel_order_url());
+					}
 					break;
 // 				case 'denied' :
 // 				case 'expired' :
@@ -704,7 +714,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->update_status ( 'on-hold', sprintf ( __ ( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
 					break;
 			}
-			$order_return_url = $this->get_return_url($order);
+
 			$this->log("All good, about to redirect to $order_return_url");
 			// WordPress redirect
 			// wp_redirect ( $order_return_url );
@@ -713,7 +723,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			exit ();
 
 		} elseif ($order->get_status() == 'completed') {
-			$order_return_url = $this->get_return_url($order);
 			$this->log("Order already completed. We're redirecting to $order_return_url");
 			// WordPress redirect
 			// wp_redirect ( $order_return_url );
