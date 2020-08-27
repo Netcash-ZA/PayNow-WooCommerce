@@ -19,5 +19,6 @@ yarn.lock
 .wp-env.override.json
 
 # Conf
+.idea
 .vscode
 sftp-config.json
