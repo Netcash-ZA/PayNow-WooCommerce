@@ -48,7 +48,7 @@ if [ -z "$NO_CHECKS" ]; then
 	# Do a dry run of the repository reset. Prompting the user for a list of all
 	# files that will be removed should prevent them from losing important files!
 	status "Resetting the repository to pristine condition. ✨"
-	to_clean=$(git clean -xdf --dry-run)
+	to_clean=$(git clean -df --dry-run)
 	if [ ! -z "$to_clean" ]; then
 		echo $to_clean
 		warning "🚨 About to delete everything above! Is this okay? 🚨"
@@ -58,7 +58,7 @@ if [ -z "$NO_CHECKS" ]; then
 			# Remove ignored files to reset repository to pristine condition. Previous
 			# test ensures that changed files abort the plugin build.
 			status "Cleaning working directory... 🛀"
-			git clean -xdf
+			git clean -df
 		else
 			error "Fair enough; aborting. Tidy up your repo and try again. 🙂"
 			exit 1
@@ -109,14 +109,13 @@ done
 #php bin/generate-gutenberg-php.php > gutenberg.tmp.php
 #mv gutenberg.tmp.php gutenberg.php
 
-build_files=$(ls build/*/*.{js,css,asset.php} build/block-library/blocks/*.php build/block-library/blocks/*/block.json)
+#build_files=$(ls build/*/*.{js,css,asset.php} build/block-library/blocks/*.php build/block-library/blocks/*/block.json)
 
 # Generate the plugin zip file.
 status "Creating archive... 🎁"
 zip -r paynow.zip \
 	gateway-paynow.php \
 	includes \
-	$build_files \
 	readme.txt \
 	changelog.txt \
 	README.md
