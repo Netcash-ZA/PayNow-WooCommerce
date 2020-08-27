@@ -20,5 +20,8 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
-[{*.txt,wp-config-sample.php}]
-end_of_line = crlf
+[*.{gradle,java,kt}]
+indent_style = space
+
+[packages/react-native-*/**.xml]
+indent_style = space
