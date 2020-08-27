@@ -19,11 +19,20 @@
         "wp-phpunit/wp-phpunit": "^5.4"
     },
     "require": {
-        "composer/installers": "~1.0"
+        "composer/installers": "~1.0",
+        "netcash/paynow-php-sdk": "@dev"
     },
     "scripts": {
         "format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
         "lint": "phpcs --standard=phpcs.xml.dist"
+    },
+    "repositories": [
+    {
+      "type": "path",
+      "url": "../PayNow-SDK",
+      "options": {
+        "symlink": false
+      }
     }
   ]
 }
