@@ -110,12 +110,16 @@ done
 #mv gutenberg.tmp.php gutenberg.php
 
 #build_files=$(ls build/*/*.{js,css,asset.php} build/block-library/blocks/*.php build/block-library/blocks/*/block.json)
+vendor_files=$(ls vendor/netcash/paynow-php-sdk/*.php vendor/netcash/paynow-php-sdk/src/*.php vendor/netcash/paynow-php-sdk/src/**/*.php)
 
 # Generate the plugin zip file.
 status "Creating archive... 🎁"
 zip -r paynow.zip \
 	gateway-paynow.php \
+	paynow_callback.php \
+	assets \
 	includes \
+	$vendor_files \
 	readme.txt \
 	changelog.txt \
 	README.md
