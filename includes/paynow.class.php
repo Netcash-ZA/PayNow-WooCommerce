@@ -104,7 +104,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	public static function error_notice_soap() {
-		$this->error_notice_general("We've noticed that you <em>do not</em> have the PHP <a href=\"http://php.net/manual/en/book.soap.php\" target=\"_blank\">SOAP extension</a> installed. Without this extension, this module won't function.");
+		self::error_notice_general("We've noticed that you <em>do not</em> have the PHP <a href=\"http://php.net/manual/en/book.soap.php\" target=\"_blank\">SOAP extension</a> installed. Without this extension, this module won't function.");
 	}
 
 	public static function error_notice_general($message = '') {

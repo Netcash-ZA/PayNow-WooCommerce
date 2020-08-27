@@ -14,7 +14,7 @@
  * Required functions
  */
 if ( ! function_exists( 'woothemes_queue_update' ) )
-	require_once( 'woo-includes/woo-functions.php' );
+	require_once( 'includes/woocommerce/woo-functions.php' );
 
 /**
  * Plugin updates
@@ -35,7 +35,7 @@ function woocommerce_paynow_init() {
 
 	if ( ! class_exists( 'WC_Payment_Gateway' ) ) return;
 
-	require_once( plugin_basename( 'classes/paynow.class.php' ) );
+	require_once( plugin_basename( 'includes/paynow.class.php' ) );
 
 	add_filter('woocommerce_payment_gateways', 'woocommerce_paynow_add_gateway' );
 
