@@ -13,8 +13,9 @@
 /**
  * Required functions
  */
-if ( ! function_exists( 'woothemes_queue_update' ) )
+if ( ! function_exists( 'woothemes_queue_update' ) ) {
 	require_once( 'includes/woocommerce/woo-functions.php' );
+}
 
 /**
  * Plugin updates
@@ -30,7 +31,9 @@ add_action( 'plugins_loaded', 'woocommerce_paynow_init', 0 );
  */
 function woocommerce_paynow_init() {
 
-	if ( ! class_exists( 'WC_Payment_Gateway' ) ) return;
+	if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
+		return;
+	}
 
 	require_once( plugin_basename( 'includes/paynow.class.php' ) );
 
@@ -39,7 +42,7 @@ function woocommerce_paynow_init() {
 	// Autoload the SDK
 	\Netcash\PayNowSDK\AutoLoader::register();
 
-	add_filter('woocommerce_payment_gateways', 'woocommerce_paynow_add_gateway' );
+	add_filter( 'woocommerce_payment_gateways', 'woocommerce_paynow_add_gateway' );
 
 } // End woocommerce_paynow_init()
 

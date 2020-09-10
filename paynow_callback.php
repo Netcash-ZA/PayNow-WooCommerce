@@ -24,18 +24,23 @@ function pn_is_offline() {
 	Returns 2 for EFT
 	Returns 3 for Retail
 	*/
-	$offline_methods = [2, 3];
+	$offline_methods = array( 2, 3 );
 
 	// If !$accepted, means it's the callback.
 	// If $accepted, and in array, means it's the actual called response
-	$accepted = isset($_POST['TransactionAccepted']) ? $_POST['TransactionAccepted'] == 'true' : false;
-	$method = isset($_POST['Method']) ? (int) $_POST['Method'] : null;
-	pnlog('Checking if offline: ' . print_r(array(
-		"isset" => (bool) isset($_POST['Method']),
-		"Method" => (int) $_POST['Method'],
-	), true));
+	$accepted = isset( $_POST['TransactionAccepted'] ) ? $_POST['TransactionAccepted'] == 'true' : false;
+	$method   = isset( $_POST['Method'] ) ? (int) $_POST['Method'] : null;
+	pnlog(
+		'Checking if offline: ' . print_r(
+			array(
+				'isset'  => (bool) isset( $_POST['Method'] ),
+				'Method' => (int) $_POST['Method'],
+			),
+			true
+		)
+	);
 
-	return !$accepted && in_array($method, $offline_methods);
+	return ! $accepted && in_array( $method, $offline_methods );
 }
 
 /**
@@ -44,12 +49,13 @@ function pn_is_offline() {
 function pn_get_redirect_url() {
 	// $url_for_redirect = pn_full_url($_SERVER);
 	// $url_for_redirect = str_ireplace(basename(__FILE__), "index.php", $url_for_redirect);
-	$url_for_redirect = get_permalink( get_option('woocommerce_myaccount_page_id') );;
+	$url_for_redirect = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
+
 	return $url_for_redirect;
 }
 
-function pnlog($value=''){
-	error_log("[PayNow] {$value}");
+function pnlog( $value = '' ) {
+	error_log( "[PayNow] {$value}" );
 }
 
 // Load System
@@ -59,15 +65,15 @@ pn_load_system();
 pn_load_paynow();
 
 // Redirect URL for users using EFT/Retail payments to notify them the order's pending
-$url_for_redirect = pn_get_redirect_url() . "/my-account/";
+$url_for_redirect = pn_get_redirect_url() . '/my-account/';
 
-pnlog(__FILE__ . " POST: " . print_r($_REQUEST, true) );
+pnlog( __FILE__ . ' POST: ' . print_r( $_REQUEST, true ) );
 
-$response = new Netcash\PayNowSDK\Response($_POST);
+$response   = new Netcash\PayNowSDK\Response( $_POST );
 $wasOffline = $response->wasOfflineTransaction();
-pnlog(__FILE__ . "IS OFFLINE? " . ($wasOffline ? 'Yes' : 'No') );
+pnlog( __FILE__ . 'IS OFFLINE? ' . ( $wasOffline ? 'Yes' : 'No' ) );
 
-if( isset($_POST) && !empty($_POST) && !$wasOffline ) {
+if ( isset( $_POST ) && ! empty( $_POST ) && ! $wasOffline ) {
 
 	// This is the notification coming in!
 	// Act as an IPN request and forward request to Credit Card method.
@@ -84,13 +90,13 @@ if( isset($_POST) && !empty($_POST) && !$wasOffline ) {
 
 } else {
 	// Probably calling the "redirect" URL
-	pnlog(__FILE__ . ' Probably calling the "redirect" URL');
+	pnlog( __FILE__ . ' Probably calling the "redirect" URL' );
 
-	if( $url_for_redirect ) {
-		header ( "Location: {$url_for_redirect}" );
+	if ( $url_for_redirect ) {
+		header( "Location: {$url_for_redirect}" );
 	} else {
-	    die( "No 'redirect' URL set." );
+		die( "No 'redirect' URL set." );
 	}
 }
 
-die( "Invalid request. Cannot call file directly." );
+die( 'Invalid request. Cannot call file directly.' );
