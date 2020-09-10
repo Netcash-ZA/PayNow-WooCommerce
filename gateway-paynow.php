@@ -35,7 +35,7 @@ function woocommerce_paynow_init() {
 		return;
 	}
 
-	require_once( plugin_basename( 'includes/paynow.class.php' ) );
+	require_once( plugin_basename( 'includes/class-wc-gateway-paynow.php' ) );
 
 	// Include the SDK's autoloader
 	require_once( plugin_basename( 'vendor/netcash/paynow-php-sdk/AutoLoader.php' ) );
