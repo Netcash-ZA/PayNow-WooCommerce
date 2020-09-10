@@ -1,4 +1,7 @@
 <?php
+
+use Netcash\PayNowSDK\Response;
+
 /**
  * Netcash Pay Now Payment Gateway
  *
@@ -15,6 +18,14 @@
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	public $version = '3.0.0';
+
+	public static $ORDER_STATUS_COMPLETED = 'completed';
+	public static $ORDER_STATUS_ON_HOLD = 'on-hold';
+	public static $ORDER_STATUS_PROCESSING = 'processing';
+	public static $ORDER_STATUS_PENDING = 'pending';
+	public static $ORDER_STATUS_CANCELLED = 'cancelled';
+	public static $ORDER_STATUS_FAILED = 'failed';
+	public static $ORDER_STATUS_REFUNDED = 'refunded';
 
 	private $SOAP_INSTALLED = false;
 
@@ -37,12 +48,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// Setup available countries.
 		$this->available_countries = array (
-				'ZA'
+			'ZA'
 		);
 
 		// Setup available currency codes.
 		$this->available_currencies = array (
-				'ZAR'
+			'ZAR'
 		);
 
 		// Load the form fields.
@@ -151,12 +162,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		if(empty($this->get_errors())) {
 			// No errors thus far, so Validate Service Keys here
-			require(dirname(__FILE__).'/PayNowValidator.php');
-			$Validator = new Netcash\PayNowValidator();
+			$Validator = new Netcash\PayNowSDK\KeysValidator();
 			$Validator->setVendorKey('7f7a86f8-5642-4595-8824-aa837fc584f2');
 
 			try {
-				$result = $Validator->validate_paynow_service_key($account_number, $service_key);
+				$result = $Validator->validatePaynowServiceKey($account_number, $service_key);
 
 				if( $result !== true ) {
 					$this->add_error($result[$service_key] ? $result[$service_key] : "<strong>Service Key</strong> {$result}");
@@ -318,57 +328,39 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$shipping_name = explode ( ' ', $order->get_shipping_method() );
 
-		// Create unique order ID for reference in IPN callback. Use order ID, NOT order number.
-		$order_id_unique = $order->get_id() . "_" . date("Ymds");
-
 		$customerName = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
 		$customerID = $order->get_user_id();
 		$netcashGUID = "7f7a86f8-5642-4595-8824-aa837fc584f2";
 
 		$tokenize = (bool) $this->settings['do_tokenization'];
 
-		// Construct variables for post
-		$this->data_to_send = array (
-			// Merchant details
-			'm1' => $this->settings ['service_key'],
-			// m2 is Netcash Pay Now internal key to distinguish their various portfolios
-			'm2' => $netcashGUID,
 
-			// Item details
-			'p2' => $order_id_unique, // Reference
-            // p3 modified to be Client Name (#Order ID) instead of Site name + Order ID
-			'p3' => "{$customerName} ({$order->get_order_number()})",
-			'p4' => $order->get_total(),
+		$form = new \Netcash\PayNowSDK\Form($this->settings ['service_key']);
 
-			'm3' => $netcashGUID,
+		$form->setField('m2', $netcashGUID);
+		$form->setField('m3', $netcashGUID);
 
-			// Extra fields
-			'm4' => "{$customerID}", // Extra1
-			'm5' => $order->get_cancel_order_url (), // Extra2
-			'm6' => $order->get_order_key(), // Extra3
+		$form->setOrderID($order->get_id());
+		$form->setDescription("{$customerName} ({$order->get_order_number()})");
+		$form->setAmount($order->get_total());
 
-			'm9' => $order->get_billing_email(),
-			'm10' => 'wc-api=WC_Gateway_PayNow',
+//		$form->setCellphone($order->get_);
+		$form->setEmail($order->get_billing_email());
 
-			// Unused but useful reference fields for debugging
-			'return_url' => $this->get_return_url ( $order ),
-			'cancel_url' => $order->get_cancel_order_url (),
-			'notify_url' => $this->response_url,
+		$form->setExtraField($customerID, 1); // m4
+		$form->setExtraField($order->get_cancel_order_url(), 2); // m5
+		$form->setExtraField($order->get_order_key(), 3); // m6
 
-			'm14' => $tokenize ? '1' : '0',
-		);
+		$form->setReturnCardDetail($tokenize); // m14
 
-		$paynow_args_array = array ();
+		$form->setReturnString('wc-api=WC_Gateway_PayNow');
 
-		foreach ( $this->data_to_send as $key => $value ) {
-			$paynow_args_array [] = '<input type="hidden" name="' . $key . '" value="' . $value . '" />';
-		}
+		// Output the HTML form
+		$theForm = $form->makeForm(true, __( 'Pay via Pay Now', 'woothemes' ));
 
-		$this->log ( "Netcash Pay Now form post paynow_args_array: " . print_r ( $paynow_args_array, true ) );
+		$this->log ( "Netcash Pay Now form post paynow_args_array: " . print_r ( $form->getFields(), true ) );
 
-		return '<form action="' . $this->url . '" method="post" id="paynow_payment_form">
-				' . implode ( '', $paynow_args_array ) . '
-				<input type="submit" class="button-alt" id="submit_paynow_payment_form" value="' . __ ( 'Pay via Pay Now', 'woothemes' ) . '" /> <a class="button cancel" href="' . $order->get_cancel_order_url () . '">' . __ ( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
+		$x = $theForm . '<a class="button cancel" href="' . $order->get_cancel_order_url () . '">' . __ ( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
 				<script type="text/javascript">
 					jQuery(function(){
 						jQuery("body").block(
@@ -388,10 +380,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 							        cursor:         "wait"
 							    }
 							});
-						jQuery( "#submit_paynow_payment_form" ).click();
+						jQuery( "#netcash-paynow-submit" ).click();
 					});
-				</script>
-			</form>';
+				</script>';
+
+		return $x;
 	}
 
 	/**
@@ -403,8 +396,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$order = new WC_Order ( $order_id );
 
 		return array (
-				'result' => 'success',
-				'redirect' => $order->get_checkout_payment_url ( true )
+			'result' => 'success',
+			'redirect' => $order->get_checkout_payment_url ( true )
 		);
 	}
 
@@ -421,196 +414,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * Check Pay Now IPN validity.
-	 *
-	 * @param array $data
-	 *
-	 * @since 1.0.0
-	 */
-	function check_ipn_request_is_valid($data) {
-		global $woocommerce;
-
-		$this->log("A callback was received from Netcash Pay Now...");
-
-		$this->log ( "check_ipn_request_is_valid starting" );
-
-		$pnError = false;
-		$pnDone = false;
-		$pnDebugEmail = $this->settings ['debug_email'];
-
-		if (! is_email ( $pnDebugEmail )) {
-			$pnDebugEmail = get_option ( 'admin_email' );
-		}
-
-		$sessionid = $data ['Extra3'];
-		$transaction_id = $data ['RequestTrace'];
-		$vendor_name = get_option ( 'blogname' );
-		$vendor_url = home_url ( '/' );
-
-		$order_id = ( int ) $data ['Reference'];
-		// Convert unique reference back to actual order ID
-		$pieces = explode("_", $order_id);
-		$order_id = $pieces[0];
-
-		$order_key = esc_attr ( $sessionid );
-		$order = new WC_Order ( $order_id );
-
-		$data_string = '';
-		$data_array = array ();
-
-		// Dump the submitted variables and calculate security signature
-		foreach ( $data as $key => $val ) {
-			$data_string .= $key . '=' . urlencode ( $val ) . '&';
-			$data_array [$key] = $val;
-		}
-
-		// Remove the last '&' from the parameter string
-		$data_string = substr ( $data_string, 0, - 1 );
-
-		$this->log ( "\n" . '---------------------' . "\n" . 'Pay Now IPN call received' );
-
-		// Notify Netcash Pay Now that information has been received
-		if (! $pnError && ! $pnDone) {
-			header ( 'HTTP/1.0 200 OK' );
-			flush ();
-		}
-
-		// Get data sent by Netcash Pay Now
-		if (! $pnError && ! $pnDone) {
-			$this->log ( 'Pay Now Data from POST: ' . print_r ( $data, true ) );
-
-			if ($data === false) {
-				$pnError = true;
-				$pnErrMsg = PN_ERR_BAD_ACCESS;
-			}
-		}
-
-		// Get internal order and verify it hasn't already been processed
-		if (! $pnError && ! $pnDone) {
-			// $this->log ( "Purchase information: \n" . print_r ( $order, true ) );
-
-			// Check if order has already been processed
-			if ($order->get_status() == 'completed') {
-				$this->log ( 'Order has already been processed' );
-				$pnDone = true;
-			}
-		}
-
-		// Check data against internal order
-		if (! $pnError && ! $pnDone) {
-			$this->log ( 'Check data against internal order' );
-
-			// Check order amount
-			if (! $this->amounts_equal ( $data['Amount'], $order->get_total() )) {
-				$pnError = true;
-				$pnErrMsg = PN_ERR_AMOUNT_MISMATCH;
-				$pnErrMsg .= "Recieved: {$data['Amount']} but expected {$order->get_total()}";
-			}			// Check session ID
-			elseif (strcasecmp ( $data ['Extra3'], $order->get_order_key() ) != 0) {
-				$pnError = true;
-				$pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
-			}
-		}
-
-		// Checking status and updating order
-		if (! $pnError && ! $pnDone) {
-			$this->log ( 'Checking status and updating order' );
-
-			if ($order->get_order_key() !== $order_key) {
-				$this->log ( "Order key object: " . $order->get_order_key() );
-				$this->log ( "Order key variable: " . $order_key );
-				$this->log ( "order->order_key != order_key so exiting" );
-				$pnError = true;
-				$pnErrMsg = PN_ERR_SESSIONID_MISMATCH;
-			}
-
-			switch ($data ['TransactionAccepted']) {
-				case 'true' :
-					$this->log ( '- Complete' );
-
-					// Payment completed
-					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
-					// $order->payment_complete ();
-					$this->log ( 'Note added to order' );
-
-					if ($this->settings ['send_debug_email'] == 'yes') {
-						$this->log ( 'Debug on so sending email' );
-						$subject = "Netcash Pay Now Successful Transaction on your site";
-						$body = "A Netcash Pay Now transaction has been completed successfully on your website\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Unique Reference: " . $data ['Reference'] . "\n" . "Request Trace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status();
-						wp_mail ( $pnDebugEmail, $subject, $body );
-						$this->log("Done sending success email");
-					} else {
-						$this->log ( 'Debug off so not success sending email' );
-					}
-
-					break;
-
-				case 'false' :
-					$this->log ( '- Failed, updating status with failed message: ' . $data['Reason'] );
-
-					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason: "%s".', 'woothemes' ), strtolower ( self::escape ( $data ['Reason'] ) ) ) );
-					$this->log("Checking if mail must be sent");
-					if ($this->settings ['send_debug_email'] == 'yes') {
-						$this->log("Debug on so sending mail that transaction failed.");
-						$subject = "Netcash Pay Now Failed Transaction on your site";
-						$body = "Hi,\n\n" . "A failed Netcash Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Purchase ID: " . $order->get_id() . "\n" . "User ID: " . $order->get_user_id() . "\n" . "RequestTrace: " . $data ['RequestTrace'] . "\n" . "Payment Status: " . $data ['TransactionAccepted'] . "\n" . "Order Status Code: " . $order->get_status() . "\n" . "Failure Reason: " . $data ['Reason'];
-						wp_mail ( $pnDebugEmail, $subject, $body );
-						$this->log("Done sending failed email");
-					} else {
-						$this->log("Debug off so not sending failed email");
-					}
-					break;
-
-				default :
-					// If unknown status, do nothing (safest course of action)
-					break;
-			}
-		}
-
-		// If an error occurred
-		if ($pnError) {
-			$this->log ( 'Error occurred: ' . $pnErrMsg );
-
-			if ($this->settings ['send_debug_email'] == 'yes') {
-				$this->log ( 'Debug on so sending email notification' );
-
-				// Send an email
-				$subject = "Netcash Pay Now Processing Error: " . $pnErrMsg;
-				$body = "Hi,\n\n" . "An invalid Pay Now transaction on your website requires attention\n" . "------------------------------------------------------------\n" . "Site: " . $vendor_name . " (" . $vendor_url . ")\n" . "Remote IP Address: " . $_SERVER ['REMOTE_ADDR'] . "\n" . "Remote host name: " . gethostbyaddr ( $_SERVER ['REMOTE_ADDR'] ) . "\n" . "Purchase ID: " . $order->get_id() . "\n" . "User ID: " . $order->get_user_id() . "\n";
-				if (isset ( $data ['RequestTrace'] ))
-					$body .= "Pay Now RequestTrace: " . $data ['RequestTrace'] . "\n";
-				if (isset ( $data ['Reason'] ))
-					$body .= "Pay Now Payment Transaction Failed Reason: " . $data ['Reason'] . "\n";
-				$body .= "\nError: " . $pnErrMsg . "\n";
-
-				switch ($pnErrMsg) {
-					case PN_ERR_AMOUNT_MISMATCH :
-						$body .= "Value received : " . $data ['Amount'] . "\n" . "Value should be: " . $order->get_total();
-						break;
-
-					case PN_ERR_ORDER_ID_MISMATCH :
-						$body .= "Value received : " . $data ['Reference'] . "\n" . "Value should be: " . $order->get_id();
-						break;
-
-					case PN_ERR_SESSION_ID_MISMATCH :
-						$body .= "Value received : " . $data ['Extra3'] . "\n" . "Value should be: " . $order->get_order_key();
-						break;
-
-					// For all other errors there is no need to add additional information
-					default :
-						break;
-				}
-				$this->log("Done sending error email");
-				wp_mail ( $pnDebugEmail, $subject, $body );
-			}
-		}
-		$this->log ( "Looks like we're almost done with check_ipn_request_is_valid");
-
-		$this->log("Returning pnError value of '$pnError'");
-		return $pnError;
-	}
-
-	/**
 	 * Check Pay Now IPN response
 	 *
 	 * @since 1.0.0
@@ -618,23 +421,42 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function check_ipn_response() {
 		$this->log ( "check_ipn_response starting" );
 
-		$strippedPOST = stripslashes_deep ( $_POST );
+		$paynow = new Netcash\PayNowSDK\PayNow();
+		$response = new Netcash\PayNowSDK\Response($_POST);
 
-		if (!$this->check_ipn_request_is_valid ( $_POST )) {
-			$this->log ("OK:ipn_request_is_valid");
-			do_action ( 'valid-paynow-standard-ipn-request', $strippedPOST );
+		$order_id = esc_attr ( $response->getOrderID() );
+		$order = new WC_Order ( $order_id );
+		$order_key = esc_attr ( $response->getExtra(3) );
+
+		if (!$paynow->validateResponse($_POST, $order->get_id(), $order->get_total())) {
+			$this->log ("OK:valid Pay Now response");
+
+			$completed_statusses = ['completed', 'processing'];
+
+			if (in_array($order->get_status(), $completed_statusses)) {
+				$this->log ( 'Order has already been completed/processed. Current status: '.$order->get_status() );
+				// Error
+				return false;
+			}
+
+			if ($order->get_order_key() !== $order_key) {
+				$this->log ( "Order key object: " . $order->get_order_key() );
+				$this->log ( "Order key variable: " . $order_key );
+				$this->log ( "order->order_key != order_key so exiting" );
+
+				// Error
+				return false;
+			}
+
+			do_action ( 'valid-paynow-standard-ipn-request', $response->getData() );
 		} else {
 			$error = "System failed checking ipn_request_valid";
 			$this->log ($error);
 			$this->log ("Something went wrong! Redirecting to order cancelled.");
 
-			$order_id = ( int ) $_POST ['Reference'];
-			// Convert unique reference back to actual order ID
-			$pieces = explode("_", $order_id);
-			$order_id = $pieces[0];
 			$order = new WC_Order ( $order_id );
 			if( $order ) {
-				$order->update_status ( 'on-hold', $error );
+				$order->update_status ( self::$ORDER_STATUS_ON_HOLD, $error );
 			}
 			wp_redirect($_POST['Extra2']);
 		}
@@ -648,96 +470,86 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function successful_request($posted) {
 		$this->log("successful_request is called");
 
-		$order_id = ( int ) $posted ['Reference'];
-		// Convert unique reference back to actual order ID
-		$pieces = explode("_", $order_id);
-		$order_id = $pieces[0];
+		$response = new Response($posted);
 
-		$order_key = esc_attr ( $posted ['Extra3'] );
+		$order_id = $response->getOrderID();
 		$order = new WC_Order ( $order_id );
+//		$order_key = $response->getExtra(3);
 
-		if ($order->get_order_key() !== $order_key) {
-			$error =  "Key problem. Redirecting to cancelled";
-			$this->log($error);
-			$order->update_status ( 'on-hold', $error );
-			wp_redirect($_POST['Extra2']);
-			exit ();
+		if ($order->get_status() === 'completed') {
+			die('xxx123');
+			throw new \Exception('order exists...');
 		}
+
+		$cancel_redirect_url = $response->getExtra(2);
 
 		$this->log("- current order status: ".$order->get_status());
 		$order_return_url = $this->get_return_url($order);
 
-		if ($order->get_status() !== 'completed') {
-			// We are here so lets check status and do actions
-			switch (strtolower ( $posted ['TransactionAccepted'] )) {
-				case 'true' :
-					// Payment completed
-					$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
-					$order->payment_complete ();
+		if ($response->isPending()) {
+			// Still waiting... (E.g., EFT, or in-store)
+			// Mark order as "Pending" payment
+			$order->add_order_note ( __ ( 'Netcash response received. Payment pending', 'woothemes' ) );
+			$order->update_status ( self::$ORDER_STATUS_PENDING, 'Pending payment');
+		} else {
 
-					if($posted['Method'] == '1') {
-						// It was a CC transaction
+			$order->add_order_note ( __ ( 'IPN payment completed', 'woothemes' ) );
 
-						if(isset($posted['ccHolder'])) {
-							// We have CC detail
-							$pnCreditCardDetail = "";
-							$pnCreditCardDetail .= "Credit card name: {$posted['ccHolder']} \r\n";
-							$pnCreditCardDetail .= "Credit card number: {$posted['ccMasked']} \r\n";
-							$pnCreditCardDetail .= "Expiry date: {$posted['ccExpiry']} \r\n";
-							$pnCreditCardDetail .= "Card token: {$posted['ccToken']} \r\n";
+			// An actual request
+			if ($response->wasDeclined() || $response->wasCancelled() ) {
 
-							// Add CC detail as note
-							$order->add_order_note ( __ ( "Tokenized credit card detail: \r\n{$pnCreditCardDetail}", 'woothemes' ) );
-						} else {
-							$order->add_order_note ( __ ( "Paid with credit card but tokenized detail was not received.", 'woothemes' ) );
-						}
+				$order->add_order_note ( __ ( 'Payment was cancelled or declined', 'woothemes' ) );
+
+				if($response->wasDeclined()) {
+					$order->update_status ( self::$ORDER_STATUS_FAILED, sprintf ( __ ( 'Payment failure reason "%s".', 'woothemes' ), strtolower ( self::escape ( $response->getReason() ) ) ) );
+				}
+				if($response->wasCancelled()) {
+					// If the user cancelled, redirect to cancel URL.
+					$this->log("Order cancelled by user.");
+					$order_return_url = html_entity_decode($order->get_cancel_order_url());
+					$order->update_status ( self::$ORDER_STATUS_CANCELLED, __ ('Payment canceled by user.', 'woothemes') );
+				}
+
+			} else if ($response->wasAccepted()) {
+				// Success. Mark Order as "Paid"
+				$order->payment_complete();
+
+				if($response->wasCreditCardTransaction()) {
+					// It was a CC transaction
+
+					if(isset($posted['ccHolder'])) {
+						// We have CC detail
+						$pnCreditCardDetail = "";
+						$pnCreditCardDetail .= "Credit card name: {$posted['ccHolder']} \r\n";
+						$pnCreditCardDetail .= "Credit card number: {$posted['ccMasked']} \r\n";
+						$pnCreditCardDetail .= "Expiry date: {$posted['ccExpiry']} \r\n";
+						$pnCreditCardDetail .= "Card token: {$posted['ccToken']} \r\n";
+
+						// Add CC detail as note
+						$order->add_order_note ( __ ( "Tokenized credit card detail: \r\n{$pnCreditCardDetail}", 'woothemes' ) );
+					} else {
+						$order->add_order_note ( __ ( "Paid with credit card but tokenized detail was not received.", 'woothemes' ) );
 					}
+				}
+			} else {
+				// No status detected...
+				// Hold order
+				// TODO Hold order not used
+				$order->update_status ( self::$ORDER_STATUS_ON_HOLD, sprintf ( __ ( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
 
-					break;
-				case 'false' :
-					// Failed order
-					$order->update_status ( 'failed', sprintf ( __ ( 'Payment failure reason1 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
-
-					$wasCancelled = stristr($posted['Reason'], 'cancelled');
-					if($wasCancelled !== false) {
-						// If the user cancelled, redirect to cancel URL.
-						$this->log("Order cancelled by user.");
-						$order_return_url = html_entity_decode($order->get_cancel_order_url());
-					}
-					break;
-// 				case 'denied' :
-// 				case 'expired' :
-// 				case 'failed' :
-				default :
-					// Hold order
-					// TODO Hold order not used
-					$order->update_status ( 'on-hold', sprintf ( __ ( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower ( self::escape ( $posted ['Reason'] ) ) ) );
-					break;
+				wp_redirect($cancel_redirect_url);
+				echo "<script>window.location='$cancel_redirect_url'</script>";
+				exit ();
 			}
-
-			$this->log("All good, about to redirect to $order_return_url");
-			// WordPress redirect
-			// wp_redirect ( $order_return_url );
-			// JavaScript redirect
-			echo "<script>window.location='$order_return_url'</script>";
-			exit ();
-
-		} elseif ($order->get_status() == 'completed') {
-			$this->log("Order already completed. We're redirecting to $order_return_url");
-			// WordPress redirect
-			// wp_redirect ( $order_return_url );
-			// JavaScript redirect
-			echo "<script>window.location='$order_return_url'</script>";
-			exit ();
 		}
 
-		// This order is already completed
-		$error =  "Error. Redirecting to cancelled";
-		$this->log($error);
-		$order->update_status ( 'on-hold', $error );
-		wp_redirect($_POST['Extra2']);
-
+		$this->log("Redirecting to $order_return_url");
+		// WordPress redirect
+		 wp_redirect ( $order_return_url );
+		// JavaScript redirect
+		echo "<script>window.location='$order_return_url'</script>";
 		exit ();
+
 	}
 
 	/**

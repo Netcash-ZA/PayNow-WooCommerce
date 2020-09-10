@@ -19,9 +19,6 @@ if ( ! function_exists( 'woothemes_queue_update' ) )
 /**
  * Plugin updates
  */
-// TODO Obtain product hash and file ID from Matty
-//woothemes_queue_update( plugin_basename( __FILE__ ), '12345678901234567890123456789012', '12345' );
-
 load_plugin_textdomain( 'wc_paynow', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) );
 
 add_action( 'plugins_loaded', 'woocommerce_paynow_init', 0 );
@@ -36,6 +33,11 @@ function woocommerce_paynow_init() {
 	if ( ! class_exists( 'WC_Payment_Gateway' ) ) return;
 
 	require_once( plugin_basename( 'includes/paynow.class.php' ) );
+
+	// Include the SDK's autoloader
+	require_once( plugin_basename( 'vendor/netcash/paynow-php-sdk/AutoLoader.php' ) );
+	// Autoload the SDK
+	\Netcash\PayNowSDK\AutoLoader::register();
 
 	add_filter('woocommerce_payment_gateways', 'woocommerce_paynow_add_gateway' );
 

@@ -63,10 +63,11 @@ $url_for_redirect = pn_get_redirect_url() . "/my-account/";
 
 pnlog(__FILE__ . " POST: " . print_r($_REQUEST, true) );
 
-$offline = pn_is_offline();
-pnlog(__FILE__ . "IS OFFLINE? " . ($offline ? 'Yes' : 'No') );
+$response = new Netcash\PayNowSDK\Response($_POST);
+$wasOffline = $response->wasOfflineTransaction();
+pnlog(__FILE__ . "IS OFFLINE? " . ($wasOffline ? 'Yes' : 'No') );
 
-if( isset($_POST) && !empty($_POST) && !$offline ) {
+if( isset($_POST) && !empty($_POST) && !$wasOffline ) {
 
 	// This is the notification coming in!
 	// Act as an IPN request and forward request to Credit Card method.
