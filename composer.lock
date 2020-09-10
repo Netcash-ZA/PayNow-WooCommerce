@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "845ad85fb02a0bfa0144d7252819bc02",
+    "content-hash": "594e5bf288cbc793b7fa1f3a63461778",
     "packages": [
         {
             "name": "composer/installers",
@@ -191,7 +191,7 @@
                 "south africa"
             ],
             "transport-options": {
-                "symlink": false
+                "symlink": true
             }
         }
     ],
@@ -467,16 +467,16 @@
         },
         {
             "name": "wp-phpunit/wp-phpunit",
-            "version": "5.5.0",
+            "version": "5.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wp-phpunit/wp-phpunit.git",
-                "reference": "5cf5a40954b8c47941afdc08b0000ce42efe5993"
+                "reference": "763121e752594664c150643e05c991a0acf3800a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wp-phpunit/wp-phpunit/zipball/5cf5a40954b8c47941afdc08b0000ce42efe5993",
-                "reference": "5cf5a40954b8c47941afdc08b0000ce42efe5993",
+                "url": "https://api.github.com/repos/wp-phpunit/wp-phpunit/zipball/763121e752594664c150643e05c991a0acf3800a",
+                "reference": "763121e752594664c150643e05c991a0acf3800a",
                 "shasum": ""
             },
             "type": "library",
@@ -506,7 +506,7 @@
                 "test",
                 "wordpress"
             ],
-            "time": "2020-08-12T15:43:21+00:00"
+            "time": "2020-09-02T15:53:50+00:00"
         }
     ],
     "aliases": [],

@@ -31,7 +31,7 @@
       "type": "path",
       "url": "../PayNow-SDK",
       "options": {
-        "symlink": false
+        "symlink": true
       }
     }
   ]
