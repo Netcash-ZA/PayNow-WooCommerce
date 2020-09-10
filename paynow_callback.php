@@ -84,7 +84,6 @@ if( isset($_POST) && !empty($_POST) && !$wasOffline ) {
 
 } else {
 	// Probably calling the "redirect" URL
-
 	pnlog(__FILE__ . ' Probably calling the "redirect" URL');
 
 	if( $url_for_redirect ) {
@@ -94,4 +93,4 @@ if( isset($_POST) && !empty($_POST) && !$wasOffline ) {
 	}
 }
 
-die( PN_ERR_BAD_ACCESS );
+die( "Invalid request. Cannot call file directly." );

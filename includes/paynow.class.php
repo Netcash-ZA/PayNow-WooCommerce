@@ -62,14 +62,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// Load the settings.
 		$this->init_settings ();
 
-		// Setup constants.
-		$this->setup_constants ();
-
 		// Setup default merchant data.
 		$this->service_key = $this->settings ['service_key'];
-
 		$this->url = 'https://paynow.netcash.co.za/site/paynow.aspx';
-
 		$this->title = $this->settings ['title'];
 
 		$this->response_url = add_query_arg ( 'wc-api', 'WC_Gateway_PayNow', home_url ( '/' ) );
@@ -553,65 +548,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * Setup constants.
-	 *
-	 * Setup common values and messages used by the Netcash Pay Now gateway.
-	 *
-	 * @since 1.0.0
-	 */
-	function setup_constants() {
-		global $woocommerce;
-		// // Create user agent string
-		// User agent constituents (for cURL)
-		define ( 'PN_SOFTWARE_NAME', 'WooCommerce' );
-		define ( 'PN_SOFTWARE_VER', $woocommerce->version );
-		define ( 'PN_MODULE_NAME', 'WooCommerce-PayNow-Free' );
-		define ( 'PN_MODULE_VER', $this->version );
-
-		// Features
-		// - PHP
-		$pnFeatures = 'PHP ' . phpversion () . ';';
-
-		// - cURL
-		if (in_array ( 'curl', get_loaded_extensions () )) {
-			define ( 'PN_CURL', '' );
-			$pnVersion = curl_version ();
-			$pnFeatures .= ' curl ' . $pnVersion ['version'] . ';';
-		} else
-			$pnFeatures .= ' nocurl;';
-
-			// Create user agrent
-		define ( 'PN_USER_AGENT', PN_SOFTWARE_NAME . '/' . PN_SOFTWARE_VER . ' (' . trim ( $pnFeatures ) . ') ' . PN_MODULE_NAME . '/' . PN_MODULE_VER );
-
-		// General Defines
-		define ( 'PN_TIMEOUT', 15 );
-		define ( 'PN_EPSILON', 0.01 );
-
-		// Messages
-		// Error
-		define ( 'PN_ERR_AMOUNT_MISMATCH', __ ( 'Amount mismatch', 'woothemes' ) );
-		define ( 'PN_ERR_BAD_ACCESS', __ ( 'Bad access of page', 'woothemes' ) );
-		define ( 'PN_ERR_BAD_SOURCE_IP', __ ( 'Bad source IP address', 'woothemes' ) );
-		define ( 'PN_ERR_CONNECT_FAILED', __ ( 'Failed to connect to Netcash Pay Now', 'woothemes' ) );
-		define ( 'PN_ERR_INVALID_SIGNATURE', __ ( 'Security signature mismatch', 'woothemes' ) );
-		define ( 'PN_ERR_NO_SESSION', __ ( 'No saved session found for IPN transaction', 'woothemes' ) );
-		define ( 'PN_ERR_ORDER_ID_MISSING_URL', __ ( 'Order ID not present in URL', 'woothemes' ) );
-		define ( 'PN_ERR_ORDER_ID_MISMATCH', __ ( 'Order ID mismatch', 'woothemes' ) );
-		define ( 'PN_ERR_ORDER_INVALID', __ ( 'This order ID is invalid', 'woothemes' ) );
-		define ( 'PN_ERR_ORDER_NUMBER_MISMATCH', __ ( 'Order Number mismatch', 'woothemes' ) );
-		define ( 'PN_ERR_ORDER_PROCESSED', __ ( 'This order has already been processed', 'woothemes' ) );
-		define ( 'PN_ERR_PDT_FAIL', __ ( 'PDT query failed', 'woothemes' ) );
-		define ( 'PN_ERR_PDT_TOKEN_MISSING', __ ( 'PDT token not present in URL', 'woothemes' ) );
-		define ( 'PN_ERR_SESSIONID_MISMATCH', __ ( 'Session ID mismatch', 'woothemes' ) );
-		define ( 'PN_ERR_UNKNOWN', __ ( 'Unkown error occurred', 'woothemes' ) );
-
-		// General
-		define ( 'PN_MSG_OK', __ ( 'Payment was successful', 'woothemes' ) );
-		define ( 'PN_MSG_FAILED', __ ( 'Payment has failed', 'woothemes' ) );
-		define ( 'PN_MSG_PENDING', __ ( 'The payment is pending. Please note, you will receive another Instant', 'woothemes' ) . __ ( ' Transaction Notification when the payment status changes to', 'woothemes' ) . __ ( ' "Completed", or "Failed"', 'woothemes' ) );
-	}
-
-	/**
 	 * log()
 	 *
 	 * Log system processes.
@@ -633,14 +569,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * eg. 100.00 is equal to 100.0001
 	 *
-	 * @param $amount1 Float
+	 * @param float $amount1 Float
 	 *        	1st amount for comparison
-	 * @param $amount2 Float
+	 * @param float $amount2 Float
 	 *        	2nd amount for comparison
 	 * @since 1.0.0
 	 */
 	function amounts_equal($amount1, $amount2) {
-		if (abs ( floatval ( $amount1 ) - floatval ( $amount2 ) ) > PN_EPSILON) {
+		$epsilon = 0.01;
+		if (abs ( floatval ( $amount1 ) - floatval ( $amount2 ) ) > $epsilon) {
 			return (false);
 		} else {
 			return (true);
