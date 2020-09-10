@@ -1,39 +1,56 @@
 <?php
+/**
+ * Provides a Netcash Pay Now Payment Gateway.
+ *
+ * @category   Payment Gateways
+ * @package    WooCommerce
+ * @subpackage WC_Gateway_PayNow
+ * @author     Netcash
+ * @license    https://www.gnu.org/licenses/gpl-3.0.txt GNU/GPLv3
+ * @link       https://netcash.co.za
+ * @since      1.0.0
+ */
 
 use Netcash\PayNowSDK\Response;
 
 /**
- * Netcash Pay Now Payment Gateway
+ * Class WC_Gateway_PayNow
  *
- * Provides a Netcash Pay Now Payment Gateway.
- *
- * @class       woocommerce_paynow
- * @package     WooCommerce
- * @category    Payment Gateways
- * @author      Gateway Modules
- *
- * Note:
- *  All references to mysql_real_escape_string replaced with $this->escape()
+ * The main Gateway Class
  */
 class WC_Gateway_PayNow extends WC_Payment_Gateway {
+
+	/**
+	 * Plugin version
+	 *
+	 * @var string
+	 */
 	public $version = '3.0.0';
 
-	public static $ORDER_STATUS_COMPLETED  = 'completed';
-	public static $ORDER_STATUS_ON_HOLD    = 'on-hold';
-	public static $ORDER_STATUS_PROCESSING = 'processing';
-	public static $ORDER_STATUS_PENDING    = 'pending';
-	public static $ORDER_STATUS_CANCELLED  = 'cancelled';
-	public static $ORDER_STATUS_FAILED     = 'failed';
-	public static $ORDER_STATUS_REFUNDED   = 'refunded';
+	const ORDER_STATUS_COMPLETED  = 'completed';
+	const ORDER_STATUS_ON_HOLD    = 'on-hold';
+	const ORDER_STATUS_PROCESSING = 'processing';
+	const ORDER_STATUS_PENDING    = 'pending';
+	const ORDER_STATUS_CANCELLED  = 'cancelled';
+	const ORDER_STATUS_FAILED     = 'failed';
+	const ORDER_STATUS_REFUNDED   = 'refunded';
 
-	private $SOAP_INSTALLED = false;
+	/**
+	 * Whether SOAP extension is installed
+	 *
+	 * @var bool
+	 */
+	private $soap_installed = false;
 
+	/**
+	 * WC_Gateway_PayNow constructor.
+	 * Init Class
+	 */
 	public function __construct() {
-		global $woocommerce;
 
 		if ( class_exists( 'SoapClient' ) ) {
-			// We can continue, SOAP is installed
-			$this->SOAP_INSTALLED = true;
+			// We can continue, SOAP is installed.
+			$this->soap_installed = true;
 		}
 
 		// $this->notify_url = str_replace( 'https:', 'http:', add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) ) );
@@ -77,7 +94,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		);
 
 		add_action(
-			'valid-paynow-standard-ipn-request',
+			'valid_paynow_standard_ipn_request',
 			array(
 				$this,
 				'successful_request',
@@ -110,8 +127,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			)
 		);
 
-		if ( ! $this->SOAP_INSTALLED ) {
-			// Add SOAP notices
+		if ( ! $this->soap_installed ) {
+			// Add SOAP notices.
 			add_action(
 				'admin_notices',
 				array(
@@ -127,10 +144,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 	}
 
+	/**
+	 * Alias for error_notice_general to show SOAP error message
+	 */
 	public static function error_notice_soap() {
 		self::error_notice_general( "We've noticed that you <em>do not</em> have the PHP <a href=\"http://php.net/manual/en/book.soap.php\" target=\"_blank\">SOAP extension</a> installed. Without this extension, this module won't function." );
 	}
 
+	/**
+	 * Show an error notice
+	 *
+	 * @param string $message The message to show.
+	 */
 	public static function error_notice_general( $message = '' ) {
 		?>
 		<div class="notice notice-error">
@@ -147,11 +172,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public function custom_process_admin_options() {
 
-		// NOTE: Not too sure how to show error messages to user as the 'process_admin_options' method
-		// simply skips errored (return false) fields and continues to save
-		// So, we're adding errors and then showing them (display_errors())
+		// NOTE: Not too sure how to show error messages to user as the 'process_admin_options' method.
+		// simply skips errored (return false) fields and continues to save.
+		// So, we're adding errors and then showing them (display_errors()).
 
-		if ( ! $this->SOAP_INSTALLED ) {
+		if ( ! $this->soap_installed ) {
 			// Can't validate without SOAP.
 			return false;
 		}
@@ -160,14 +185,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form_fields = $this->get_form_fields();
 
 		// Let's check the account number first. If it's correct, validate the service key.
-		// Otherwise, bail
+		// Otherwise, bail.
 		$field_account_number = $form_fields['account_number'];
 		$account_number       = $this->get_field_value( 'account_number', $field_account_number, $post_data );
 		if ( ! $account_number ) {
 			$this->add_error( '<strong>Account Number</strong> An account number is required.' );
 		}
 
-		// Valid account numb
+		// Valid account number.
 		$field_service_key = $form_fields['service_key'];
 		$service_key       = $this->get_field_value( 'service_key', $field_service_key, $post_data );
 		if ( ! $service_key ) {
@@ -175,14 +200,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		if ( empty( $this->get_errors() ) ) {
-			// No errors thus far, so Validate Service Keys here
-			$Validator = new Netcash\PayNowSDK\KeysValidator();
-			$Validator->setVendorKey( '7f7a86f8-5642-4595-8824-aa837fc584f2' );
+			// No errors thus far, so Validate Service Keys here.
+			$validator = new Netcash\PayNowSDK\KeysValidator();
+			$validator->setVendorKey( '7f7a86f8-5642-4595-8824-aa837fc584f2' );
 
 			try {
-				$result = $Validator->validatePaynowServiceKey( $account_number, $service_key );
+				$result = $validator->validatePaynowServiceKey( $account_number, $service_key );
 
-				if ( $result !== true ) {
+				if ( true !== $result ) {
 					$this->add_error( $result[ $service_key ] ? $result[ $service_key ] : "<strong>Service Key</strong> {$result}" );
 				}
 			} catch ( \Exception $e ) {
@@ -192,7 +217,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		if ( ! empty( $this->get_errors() ) ) {
 			// Errors encountered. Return false.
-			// NOTE: If users get 'Headers already sent issues, remove this line.'
+			// NOTE: If users get 'Headers already sent issues', remove this line.
 			$this->display_errors();
 			return false;
 		}
@@ -201,7 +226,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * Initialise Gateway Settings Form Fields
+	 * Initialise Gateway Settings Form Fields.
 	 *
 	 * @since 1.0.0
 	 */
@@ -228,13 +253,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			),
 			'account_number'     => array(
 				'title'       => __( 'Account Number', 'woothemes' ),
-				'type'        => 'text', // text
+				'type'        => 'text',
 				'description' => __( 'This is the Netcash Account Number, received from the Netcash website.', 'woothemes' ),
 				'default'     => '',
 			),
 			'service_key'        => array(
 				'title'       => __( 'Service Key', 'woothemes' ),
-				'type'        => 'text', // text
+				'type'        => 'text',
 				'description' => __( 'This is the Pay Now service key, received from the Netcash Connect Section on your Netcash Account.', 'woothemes' ),
 				'default'     => '',
 			),
@@ -271,34 +296,28 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	function plugin_url() {
-		if ( isset( $this->plugin_url ) ) {
-			return $this->plugin_url;
-		}
-
 		if ( is_ssl() ) {
-			return $this->plugin_url = str_replace( 'http://', 'https://', WP_PLUGIN_URL ) . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
+			$this->plugin_url = str_replace( 'http://', 'https://', WP_PLUGIN_URL ) . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
 		} else {
-			return $this->plugin_url = WP_PLUGIN_URL . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
+			$this->plugin_url = WP_PLUGIN_URL . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
 		}
+		return $this->plugin_url;
 	}
 
 	/**
-	 * is_valid_for_use()
-	 *
 	 * Check if this gateway is enabled and available in the base currency being traded with.
 	 *
 	 * @since 1.0.0
 	 */
 	function is_valid_for_use() {
-		global $woocommerce;
 
 		$is_available = false;
 
 		$user_currency = get_option( 'woocommerce_currency' );
 
-		$is_available_currency = in_array( $user_currency, $this->available_currencies );
+		$is_available_currency = in_array( $user_currency, $this->available_currencies, true );
 
-		if ( $is_available_currency && $this->enabled == 'yes' ) {
+		if ( $is_available_currency && 'yes' === $this->enabled ) {
 			$is_available = true;
 		}
 
@@ -316,7 +335,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			parent::admin_options();
 		} else {
 			?>
-			<div class="inline error"><p><strong><?php _e( 'Gateway disabled', 'woocommerce' ); ?></strong>: <?php _e( 'Pay Now does not support your store currency.', 'woocommerce' ); ?></p></div> 
+			<div class="inline error"><p><strong><?php _e( 'Gateway disabled', 'woocommerce' ); ?></strong>: <?php _e( 'Pay Now does not support your store currency.', 'woocommerce' ); ?></p></div>
 			<?php
 		}
 	}
@@ -327,13 +346,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	function payment_fields() {
-		if ( isset( $this->settings ['description'] ) && ( '' != $this->settings ['description'] ) ) {
+		if ( isset( $this->settings ['description'] ) && ( '' !== $this->settings ['description'] ) ) {
 			echo wpautop( wptexturize( $this->settings ['description'] ) );
 		}
 	}
 
 	/**
 	 * Generate the Netcash Pay Now button link.
+	 *
+	 * @param int $order_id The WooCommerce Order ID.
 	 *
 	 * @since 1.0.0
 	 */
@@ -344,40 +365,38 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$order = new WC_Order( $order_id );
 
-		$shipping_name = explode( ' ', $order->get_shipping_method() );
-
-		$customerName = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
-		$customerID   = $order->get_user_id();
-		$netcashGUID  = '7f7a86f8-5642-4595-8824-aa837fc584f2';
+		$customer_name = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
+		$customer_id   = $order->get_user_id();
+		$netcash_guid  = '7f7a86f8-5642-4595-8824-aa837fc584f2';
 
 		$tokenize = (bool) $this->settings['do_tokenization'];
 
 		$form = new \Netcash\PayNowSDK\Form( $this->settings ['service_key'] );
 
-		$form->setField( 'm2', $netcashGUID );
-		$form->setField( 'm3', $netcashGUID );
+		$form->setField( 'm2', $netcash_guid );
+		$form->setField( 'm3', $netcash_guid );
 
 		$form->setOrderID( $order->get_id() );
-		$form->setDescription( "{$customerName} ({$order->get_order_number()})" );
+		$form->setDescription( "{$customer_name} ({$order->get_order_number()})" );
 		$form->setAmount( $order->get_total() );
 
 		// $form->setCellphone($order->get_);
 		$form->setEmail( $order->get_billing_email() );
 
-		$form->setExtraField( $customerID, 1 ); // m4
-		$form->setExtraField( $order->get_cancel_order_url(), 2 ); // m5
-		$form->setExtraField( $order->get_order_key(), 3 ); // m6
+		$form->setExtraField( $customer_id, 1 );
+		$form->setExtraField( $order->get_cancel_order_url(), 2 );
+		$form->setExtraField( $order->get_order_key(), 3 );
 
-		$form->setReturnCardDetail( $tokenize ); // m14
+		$form->setReturnCardDetail( $tokenize );
 
 		$form->setReturnString( 'wc-api=WC_Gateway_PayNow' );
 
-		// Output the HTML form
-		$theForm = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
+		// Output the HTML form.
+		$the_form = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
 
 		$this->log( 'Netcash Pay Now form post paynow_args_array: ' . print_r( $form->getFields(), true ) );
 
-		$x = $theForm . '<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
+		return $the_form . '<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
 				<script type="text/javascript">
 					jQuery(function(){
 						jQuery("body").block(
@@ -400,12 +419,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						jQuery( "#netcash-paynow-submit" ).click();
 					});
 				</script>';
-
-		return $x;
 	}
 
 	/**
 	 * Process the payment and return the result.
+	 *
+	 * @param int $order_id The WooCommerce order ID.
 	 *
 	 * @since 1.0.0
 	 */
@@ -423,6 +442,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * Display text and a button to direct the user to Pay Now.
 	 *
+	 * @param WC_Order $order The order.
+	 *
 	 * @since 1.0.0
 	 */
 	function receipt_page( $order ) {
@@ -431,7 +452,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * Check Pay Now IPN response
+	 * Check Pay Now IPN response.
 	 *
 	 * @since 1.0.0
 	 */
@@ -450,9 +471,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 			$completed_statusses = array( 'completed', 'processing' );
 
-			if ( in_array( $order->get_status(), $completed_statusses ) ) {
+			if ( in_array( $order->get_status(), $completed_statusses, true ) ) {
 				$this->log( 'Order has already been completed/processed. Current status: ' . $order->get_status() );
-				// Error
 				return false;
 			}
 
@@ -461,11 +481,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$this->log( 'Order key variable: ' . $order_key );
 				$this->log( 'order->order_key != order_key so exiting' );
 
-				// Error
 				return false;
 			}
 
-			do_action( 'valid-paynow-standard-ipn-request', $response->getData() );
+			do_action( 'valid_paynow_standard_ipn_request', $response->getData() );
 		} else {
 			$error = 'System failed checking ipn_request_valid';
 			$this->log( $error );
@@ -473,7 +492,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 			$order = new WC_Order( $order_id );
 			if ( $order ) {
-				$order->update_status( self::$ORDER_STATUS_ON_HOLD, $error );
+				$order->update_status( self::ORDER_STATUS_ON_HOLD, $error );
 			}
 			wp_redirect( $_POST['Extra2'] );
 		}
@@ -482,7 +501,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	/**
 	 * Successful Payment!
 	 *
+	 * @param array $posted The posted array.
+	 *
 	 * @since 1.0.0
+	 * @throws \Exception If order is already completed.
 	 */
 	function successful_request( $posted ) {
 		$this->log( 'successful_request is called' );
@@ -494,7 +516,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// $order_key = $response->getExtra(3);
 
 		if ( $order->get_status() === 'completed' ) {
-			die( 'xxx123' );
 			throw new \Exception( 'order exists...' );
 		}
 
@@ -504,54 +525,59 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$order_return_url = $this->get_return_url( $order );
 
 		if ( $response->isPending() ) {
-			// Still waiting... (E.g., EFT, or in-store)
-			// Mark order as "Pending" payment
+			// Still waiting... (E.g., EFT, or in-store).
+			// Mark order as "Pending" payment.
 			$order->add_order_note( __( 'Netcash response received. Payment pending', 'woothemes' ) );
-			$order->update_status( self::$ORDER_STATUS_PENDING, 'Pending payment' );
+			$order->update_status( self::ORDER_STATUS_PENDING, 'Pending payment' );
 		} else {
 
 			$order->add_order_note( __( 'IPN payment completed', 'woothemes' ) );
 
-			// An actual request
+			// An actual request.
 			if ( $response->wasDeclined() || $response->wasCancelled() ) {
 
 				$order->add_order_note( __( 'Payment was cancelled or declined', 'woothemes' ) );
 
 				if ( $response->wasDeclined() ) {
-					$order->update_status( self::$ORDER_STATUS_FAILED, sprintf( __( 'Payment failure reason "%s".', 'woothemes' ), strtolower( self::escape( $response->getReason() ) ) ) );
+					// translators: Reason is from gateway.
+					$reason = sprintf(
+						'Payment failure reason "%s".',
+						strtolower( $response->getReason() )
+					);
+					$order->update_status( self::ORDER_STATUS_FAILED, $reason );
 				}
 				if ( $response->wasCancelled() ) {
 					// If the user cancelled, redirect to cancel URL.
 					$this->log( 'Order cancelled by user.' );
 					$order_return_url = html_entity_decode( $order->get_cancel_order_url() );
-					$order->update_status( self::$ORDER_STATUS_CANCELLED, __( 'Payment canceled by user.', 'woothemes' ) );
+					$order->update_status( self::ORDER_STATUS_CANCELLED, __( 'Payment canceled by user.', 'woothemes' ) );
 				}
 			} elseif ( $response->wasAccepted() ) {
-				// Success. Mark Order as "Paid"
+				// Success. Mark Order as "Paid".
 				$order->payment_complete();
 
 				if ( $response->wasCreditCardTransaction() ) {
-					// It was a CC transaction
+					// It was a CC transaction.
 
 					if ( isset( $posted['ccHolder'] ) ) {
-						// We have CC detail
-						$pnCreditCardDetail  = '';
-						$pnCreditCardDetail .= "Credit card name: {$posted['ccHolder']} \r\n";
-						$pnCreditCardDetail .= "Credit card number: {$posted['ccMasked']} \r\n";
-						$pnCreditCardDetail .= "Expiry date: {$posted['ccExpiry']} \r\n";
-						$pnCreditCardDetail .= "Card token: {$posted['ccToken']} \r\n";
+						// We have CC detail.
+						$cc_detail  = "Tokenized credit card detail: \r\n";
+						$cc_detail .= "Credit card name: {$posted['ccHolder']} \r\n";
+						$cc_detail .= "Credit card number: {$posted['ccMasked']} \r\n";
+						$cc_detail .= "Expiry date: {$posted['ccExpiry']} \r\n";
+						$cc_detail .= "Card token: {$posted['ccToken']} \r\n";
 
-						// Add CC detail as note
-						$order->add_order_note( __( "Tokenized credit card detail: \r\n{$pnCreditCardDetail}", 'woothemes' ) );
+						// Translators: Add CC detail as note.
+						$order->add_order_note( $cc_detail );
 					} else {
 						$order->add_order_note( __( 'Paid with credit card but tokenized detail was not received.', 'woothemes' ) );
 					}
 				}
 			} else {
-				// No status detected...
-				// Hold order
-				// TODO Hold order not used
-				$order->update_status( self::$ORDER_STATUS_ON_HOLD, sprintf( __( 'Payment failure reason2 "%s".', 'woothemes' ), strtolower( self::escape( $posted ['Reason'] ) ) ) );
+				// No status detected. Default to on hold.
+				// Translators: Reason is text from Gateway.
+				$reason = sprintf( __( 'Payment failure reason "%s".', 'woothemes' ), strtolower( $response->getReason() ) );
+				$order->update_status( self::ORDER_STATUS_ON_HOLD, $reason );
 
 				wp_redirect( $cancel_redirect_url );
 				echo "<script>window.location='$cancel_redirect_url'</script>";
@@ -560,70 +586,27 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		$this->log( "Redirecting to $order_return_url" );
-		// WordPress redirect
-		 wp_redirect( $order_return_url );
-		// JavaScript redirect
+		// WordPress redirect.
+		wp_redirect( $order_return_url );
+		// JavaScript redirect.
 		echo "<script>window.location='$order_return_url'</script>";
 		exit();
 
 	}
 
 	/**
-	 * log()
-	 *
 	 * Log system processes.
 	 *
+	 * @param string $message The log message.
+	 *
 	 * @since 1.0.0
 	 */
-	function log( $message, $close = false ) {
-		if ( ( $this->settings['send_debug_email'] != 'yes' && ! is_admin() ) ) {
-			return; }
+	function log( $message ) {
+		if ( ( 'yes' !== $this->settings['send_debug_email'] && ! is_admin() ) ) {
+			return;
+		}
 
 		error_log( $message );
-	}
-
-	/**
-	 * amounts_equal()
-	 *
-	 * Checks to see whether the given amounts are equal using a proper floating
-	 * point comparison with an Epsilon which ensures that insignificant decimal
-	 * places are ignored in the comparison.
-	 *
-	 * eg. 100.00 is equal to 100.0001
-	 *
-	 * @param float $amount1 Float
-	 *          1st amount for comparison
-	 * @param float $amount2 Float
-	 *          2nd amount for comparison
-	 * @since 1.0.0
-	 */
-	function amounts_equal( $amount1, $amount2 ) {
-		$epsilon = 0.01;
-		if ( abs( floatval( $amount1 ) - floatval( $amount2 ) ) > $epsilon ) {
-			return ( false );
-		} else {
-			return ( true );
-		}
-	}
-
-	/**
-	 * replace any non-ascii character with its hex code.
-	 *
-	 * @param  string $value
-	 * @return string
-	 */
-	private static function escape( $value ) {
-		$return = '';
-		for ( $i = 0; $i < strlen( $value ); ++$i ) {
-			$char = $value[ $i ];
-			$ord  = ord( $char );
-			if ( $char !== "'" && $char !== '"' && $char !== '\\' && $ord >= 32 && $ord <= 126 ) {
-				$return .= $char;
-			} else {
-				$return .= '\\x' . dechex( $ord );
-			}
-		}
-		return $return;
 	}
 
 }

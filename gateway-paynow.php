@@ -1,4 +1,12 @@
 <?php
+/**
+ * Setup the plugin in WordPress/WooCommerce
+ *
+ * @category   Payment Gateways
+ * @package    WC_Gateway_PayNow
+ * @since      1.0.0
+ */
+
 /*
 	Plugin Name: WooCommerce Pay Now Gateway
 	Plugin URI: https://github.com/Netcash-ZA/PayNow-WooCommerce
@@ -14,6 +22,9 @@
  * Required functions
  */
 if ( ! function_exists( 'woothemes_queue_update' ) ) {
+	/**
+	 * Require WooCommerce functions
+	 */
 	require_once( 'includes/woocommerce/woo-functions.php' );
 }
 
@@ -35,23 +46,29 @@ function woocommerce_paynow_init() {
 		return;
 	}
 
+	/**
+	 * Require Pay Now Gateway
+	 */
 	require_once( plugin_basename( 'includes/class-wc-gateway-paynow.php' ) );
 
-	// Include the SDK's autoloader
+	/**
+	 * Include Pay Now SDK autoloader
+	 */
 	require_once( plugin_basename( 'vendor/netcash/paynow-php-sdk/AutoLoader.php' ) );
-	// Autoload the SDK
+	// Autoload the SDK.
 	\Netcash\PayNowSDK\AutoLoader::register();
 
 	add_filter( 'woocommerce_payment_gateways', 'woocommerce_paynow_add_gateway' );
 
-} // End woocommerce_paynow_init()
+}
 
 /**
  * Add the gateway to WooCommerce
  *
+ * @param array $methods The available payment methods.
  * @since 1.0.0
  */
 function woocommerce_paynow_add_gateway( $methods ) {
 	$methods[] = 'WC_Gateway_PayNow';
 	return $methods;
-} // End woocommerce_paynow_add_gateway()
+}

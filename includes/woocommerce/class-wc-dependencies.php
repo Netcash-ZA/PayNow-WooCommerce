@@ -1,13 +1,29 @@
 <?php
 /**
+ * Load WooCommerce dependencies.
+ *
+ * @category   Payment Gateways
+ * @package    WC_Gateway_PayNow
+ * @since      1.0.0
+ */
+
+/**
  * WC Dependency Checker
  *
  * Checks if WooCommerce is enabled
  */
 class WC_Dependencies {
 
+	/**
+	 * The active plugins
+	 *
+	 * @var array
+	 */
 	private static $active_plugins;
 
+	/**
+	 * Init
+	 */
 	public static function init() {
 
 		self::$active_plugins = (array) get_option( 'active_plugins', array() );
@@ -17,13 +33,18 @@ class WC_Dependencies {
 		}
 	}
 
+	/**
+	 * Check if WC is active
+	 *
+	 * @return bool
+	 */
 	public static function woocommerce_active_check() {
 
 		if ( ! self::$active_plugins ) {
 			self::init();
 		}
 
-		return in_array( 'woocommerce/woocommerce.php', self::$active_plugins ) || array_key_exists( 'woocommerce/woocommerce.php', self::$active_plugins );
+		return in_array( 'woocommerce/woocommerce.php', self::$active_plugins, true ) || array_key_exists( 'woocommerce/woocommerce.php', self::$active_plugins );
 	}
 
 }
