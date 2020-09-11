@@ -127,6 +127,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			)
 		);
 
+		// Called via http://yoursite.com/?wc-api=paynowcallback.
+		add_action(
+			'woocommerce_api_paynowcallback',
+			array(
+				$this,
+				'handle_return_url',
+			)
+		);
+
 		if ( ! $this->soap_installed ) {
 			// Add SOAP notices.
 			add_action(
@@ -607,6 +616,41 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		error_log( $message );
+	}
+
+	/**
+	 * Handles the 'callback' URL from Netchash. Called with http://yoursite.com?wc-api=paynowcallback
+	 * The old "paynow_callback.php" file
+	 */
+	public function handle_return_url() {
+		$url_for_redirect = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
+		$url_for_redirect .= '/my-account/';
+		$this->log('handle_return_url POST: ' . print_r( $_REQUEST, true ) );
+
+		$response    = new Netcash\PayNowSDK\Response( $_POST );
+		$was_offline = $response->wasOfflineTransaction();
+		$this->log( 'handle_return_url IS OFFLINE? ' . ( $was_offline ? 'Yes' : 'No' ) );
+
+		if ( isset( $_POST ) && ! empty( $_POST ) && ! $was_offline ) {
+
+			// This is the notification coming in!
+			// Act as an IPN request and forward request to Credit Card method.
+			// Logic is exactly the same.
+
+			$paynow = new WC_Gateway_PayNow();
+			$paynow->check_ipn_response();
+			die();
+
+		} else {
+			// Probably calling the "redirect" URL.
+			$this->log( __FILE__ . ' Probably calling the "redirect" URL' );
+
+			if ( $url_for_redirect ) {
+				header( "Location: {$url_for_redirect}" );
+			} else {
+				die( "No 'redirect' URL set." );
+			}
+		}
 	}
 
 }
