@@ -25,7 +25,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '3.0.0';
+	public $version = '4.0.0';
 
 	const ORDER_STATUS_COMPLETED  = 'completed';
 	const ORDER_STATUS_ON_HOLD    = 'on-hold';
