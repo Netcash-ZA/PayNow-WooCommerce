@@ -28,7 +28,6 @@
 
 <!--    <file>./bin</file>-->
     <file>./gateway-paynow.php</file>
-    <file>./paynow_callback.php</file>
 <!--    <file>./lib</file>-->
     <file>./includes</file>
 <!--    <file>./phpunit</file>-->
