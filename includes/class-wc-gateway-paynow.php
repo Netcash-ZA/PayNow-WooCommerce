@@ -127,6 +127,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			)
 		);
 
+		// Add SOAP notices.
+		add_action(
+			'admin_notices',
+			array(
+				$this,
+				'netcash_notice_urls',
+			)
+		);
+
 		// Called via http://yoursite.com/?wc-api=paynowcallback.
 		add_action(
 			'woocommerce_api_paynowcallback',
@@ -161,13 +170,33 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * Alias for error_notice_general to show URL notices
+	 */
+	public static function netcash_notice_urls() {
+
+		$url = home_url( '/' );
+
+		$url1 = $url;
+		$url2 = "{$url}?wc-api=paynowcallback";
+
+		$s = '';
+
+		$msg  = '<strong>Netcash Connecter URLs:</strong><br>';
+		$msg  = 'Use the following URLs:<br>';
+		$msg .= "<strong>Accept</strong> and <strong>Decline</strong> URL: <code style='{$s}'>{$url1}</code><br>";
+		$msg .= "<strong>Notify</strong> and <strong>Redirect</strong> URL: <code style='{$s}'>{$url2}</code>";
+		self::error_notice_general( $msg, 'info' );
+	}
+
+	/**
 	 * Show an error notice
 	 *
 	 * @param string $message The message to show.
+	 * @param string $class   The notice class name.
 	 */
-	public static function error_notice_general( $message = '' ) {
+	public static function error_notice_general( $message = '', $class = 'error' ) {
 		?>
-		<div class="notice notice-error">
+		<div class="notice notice-<?php echo $class; ?>">
 			<p><strong>[Pay Now WooCommerce]</strong> <?php echo $message; ?></p>
 		</div>
 		<?php
@@ -623,9 +652,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * The old "paynow_callback.php" file
 	 */
 	public function handle_return_url() {
-		$url_for_redirect = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
+		$url_for_redirect  = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
 		$url_for_redirect .= '/my-account/';
-		$this->log('handle_return_url POST: ' . print_r( $_REQUEST, true ) );
+		$this->log( 'handle_return_url POST: ' . print_r( $_REQUEST, true ) );
 
 		$response    = new Netcash\PayNowSDK\Response( $_POST );
 		$was_offline = $response->wasOfflineTransaction();
