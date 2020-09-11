@@ -83,16 +83,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->url         = 'https://paynow.netcash.co.za/site/paynow.aspx';
 		$this->title       = $this->settings ['title'];
 
-		$this->response_url = add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) );
-
-		add_action(
-			'woocommerce_api_wc_gateway_paynow',
-			array(
-				$this,
-				'check_ipn_response',
-			)
-		);
-
 		add_action(
 			'valid_paynow_standard_ipn_request',
 			array(
@@ -427,7 +417,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$form->setReturnCardDetail( $tokenize );
 
-		$form->setReturnString( 'wc-api=WC_Gateway_PayNow' );
+		// $form->setReturnString( 'wc-api=paynowcallback' );
 
 		// Output the HTML form.
 		$the_form = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
