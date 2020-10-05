@@ -673,15 +673,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				// Validation failed because the order has been completed.
 				// But if this is a pending request, just redirect to the order page.
 				$is_pending = $response->isPending();
-				if($is_pending) {
-					$order_id = $response->getOrderID();
-					$order    = new WC_Order( $order_id );
+				if ( $is_pending ) {
+					$order_id     = $response->getOrderID();
+					$order        = new WC_Order( $order_id );
 					$redirect_url = $this->get_return_url( $order );
 				}
 
-//				if ( self::PN_ERROR_ORDER_ALREADY_HANDLED !== $validation_success_or_msg ) {
-//					$order->update_status( self::ORDER_STATUS_FAILED, $validation_success_or_msg );
-//				}
+				/*
+				Should order status be changed?
+				if ( self::PN_ERROR_ORDER_ALREADY_HANDLED !== $validation_success_or_msg ) {
+				$order->update_status( self::ORDER_STATUS_FAILED, $validation_success_or_msg );
+				}
+				*/
 
 				if ( $redirect_url ) {
 					wp_redirect( $redirect_url );
