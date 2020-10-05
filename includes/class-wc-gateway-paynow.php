@@ -166,15 +166,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$url = home_url( '/' );
 
-		$url1 = $url;
-		$url2 = "{$url}?wc-api=paynowcallback";
-
 		$s = '';
 
 		$msg  = '<strong>Netcash Connecter URLs:</strong><br>';
 		$msg  .= 'Use the following URLs:<br>';
-		$msg .= "<strong>Accept</strong> and <strong>Decline</strong> URL: <code style='{$s}'>{$url1}</code><br>";
-		$msg .= "<strong>Notify</strong> and <strong>Redirect</strong> URL: <code style='{$s}'>{$url2}</code>";
+		$msg .= "<strong>Accept</strong>, <strong>Decline</strong>, <strong>Notify</strong>, and <strong>Redirect</strong> URL: <code style='{$s}'>{$url}</code><br>";
+//		$msg .= "<strong>Notify</strong> and <strong>Redirect</strong> URL: <code style='{$s}'>{$url2}</code>";
 		self::error_notice_general( $msg, 'info' );
 	}
 
@@ -417,7 +414,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$form->setReturnCardDetail( $tokenize );
 
-		// $form->setReturnString( 'wc-api=paynowcallback' );
+		 $form->setReturnString( 'wc-api=paynowcallback' );
 
 		// Output the HTML form.
 		$the_form = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
