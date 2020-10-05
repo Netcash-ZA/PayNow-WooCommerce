@@ -43,11 +43,10 @@ A. Netcash Account Configuration Steps:
 
 Netcash Pay Now Callback
 
-11. Choose both the following URLs for your Accept and Decline URLs:
-	https://www.your_domain_name.co.za/
+11. Enter both the following URLs for your Accept, Decline, Notify, and Redirect URLs:
+	https://your_domain_name.co.za/
 
-12. Choose both the following URLs for your Notify and Redirect URLs:
-	https://www.your_domain_name.co.za/?wc-api=paynowcallback
+**Important:** Please make sure you use the correct URL for the redirects.
 
 WordPress and WooCommerce Installation
 
