@@ -172,7 +172,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$s = '';
 
 		$msg  = '<strong>Netcash Connecter URLs:</strong><br>';
-		$msg  = 'Use the following URLs:<br>';
+		$msg  .= 'Use the following URLs:<br>';
 		$msg .= "<strong>Accept</strong> and <strong>Decline</strong> URL: <code style='{$s}'>{$url1}</code><br>";
 		$msg .= "<strong>Notify</strong> and <strong>Redirect</strong> URL: <code style='{$s}'>{$url2}</code>";
 		self::error_notice_general( $msg, 'info' );
@@ -567,6 +567,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$order->add_order_note( __( 'Payment was cancelled or declined', 'woothemes' ) );
 
 				if ( $response->wasDeclined() ) {
+					$this->log( "\t Transaction declined");
 					// translators: Reason is from gateway.
 					$reason = sprintf(
 						'Payment failure reason "%s".',
@@ -575,12 +576,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->update_status( self::ORDER_STATUS_FAILED, $reason );
 				}
 				if ( $response->wasCancelled() ) {
+					$this->log( "\t Transaction cancelled");
 					// If the user cancelled, redirect to cancel URL.
 					$this->log( 'Order cancelled by user.' );
 					$order_return_url = html_entity_decode( $order->get_cancel_order_url() );
 					$order->update_status( self::ORDER_STATUS_CANCELLED, __( 'Payment canceled by user.', 'woothemes' ) );
 				}
 			} elseif ( $response->wasAccepted() ) {
+				$this->log( "\t Transaction accepted");
+
 				// Success. Mark Order as "Paid".
 				$order->payment_complete();
 
@@ -602,6 +606,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					}
 				}
 			} else {
+				$this->log( "\t Transaction status could not be determined...");
+
 				// No status detected. Default to on hold.
 				// Translators: Reason is text from Gateway.
 				$reason = sprintf( __( 'Payment failure reason "%s".', 'woothemes' ), strtolower( $response->getReason() ) );
@@ -619,7 +625,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// JavaScript redirect.
 		echo "<script>window.location='$order_return_url'</script>";
 		exit();
-
 	}
 
 	/**
