@@ -648,9 +648,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$response    = new Netcash\PayNowSDK\Response( $_POST );
 		$was_offline = $response->wasOfflineTransaction();
+		$is_pending  = $response->isPending();
+
 		$this->log( 'handle_return_url IS OFFLINE? ' . ( $was_offline ? 'Yes' : 'No' ) );
 
-		if ( isset( $_POST ) && ! empty( $_POST ) && ! $was_offline ) {
+		if ( isset( $_POST ) && ! empty( $_POST ) && ! $is_pending ) {
 
 			// This is the notification coming in!
 			// Act as an IPN request and forward request to Credit Card method.
