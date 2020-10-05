@@ -84,7 +84,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->title       = $this->settings ['title'];
 
 		add_action(
-			'valid_paynow_standard_ipn_request',
+			'paynow_request_validated',
 			array(
 				$this,
 				'successful_request',
@@ -509,7 +509,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				return false;
 			}
 
-			do_action( 'valid_paynow_standard_ipn_request', $response->getData() );
+			do_action( 'paynow_request_validated', $response->getData() );
 		} else {
 			$error = 'System failed checking ipn_request_valid';
 			$this->log( $error );
