@@ -1,4 +1,4 @@
-Netcash Pay Now WooCommerce Credit Card Payment Module 3.0.0
+Netcash Pay Now WooCommerce Credit Card Payment Module 4.0.0
 =========================================================
 
 Introduction
@@ -25,8 +25,7 @@ You will need:
 * Cart admin login credentials
 
 A. Netcash Account Configuration Steps:
-1. Log into your Netcash account:
-	https://merchant.netcash.co.za/SiteLogin.aspx
+1. Log into your [Netcash account](https://merchant.netcash.co.za/SiteLogin.aspx)
 2. Type in your Username, Password, and PIN
 2. Click on ACCOUNT PROFILE on the top menu
 3. Select NETCONNECTOR from tghe left side menu
