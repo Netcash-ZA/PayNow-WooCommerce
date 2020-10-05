@@ -35,6 +35,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	const ORDER_STATUS_FAILED     = 'failed';
 	const ORDER_STATUS_REFUNDED   = 'refunded';
 
+	const PN_ERROR_KEY_MISMATCH          = 'order key mismatch';
+	const PN_ERROR_AMOUNT_MISMATCH       = 'order amount mismatch';
+	const PN_ERROR_ORDER_ALREADY_HANDLED = 'order already completed/processed';
+	const PN_ERROR_GENERAL_ERROR         = 'something went wrong';
+
 	/**
 	 * Whether SOAP extension is installed
 	 *
@@ -169,9 +174,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$s = '';
 
 		$msg  = '<strong>Netcash Connecter URLs:</strong><br>';
-		$msg  .= 'Use the following URLs:<br>';
+		$msg .= 'Use the following URLs:<br>';
 		$msg .= "<strong>Accept</strong>, <strong>Decline</strong>, <strong>Notify</strong>, and <strong>Redirect</strong> URL: <code style='{$s}'>{$url}</code><br>";
-//		$msg .= "<strong>Notify</strong> and <strong>Redirect</strong> URL: <code style='{$s}'>{$url2}</code>";
+		// $msg .= "<strong>Notify</strong> and <strong>Redirect</strong> URL: <code style='{$s}'>{$url2}</code>";
 		self::error_notice_general( $msg, 'info' );
 	}
 
@@ -405,7 +410,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form->setDescription( "{$customer_name} ({$order->get_order_number()})" );
 		$form->setAmount( $order->get_total() );
 
-		$form->setCellphone($order->get_billing_phone());
+		$form->setCellphone( $order->get_billing_phone() );
 		$form->setEmail( $order->get_billing_email() );
 
 		$form->setExtraField( $customer_id, 1 );
@@ -413,8 +418,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form->setExtraField( $order->get_order_key(), 3 );
 
 		$form->setReturnCardDetail( $tokenize );
-
-		 $form->setReturnString( 'wc-api=paynowcallback' );
+		$form->setReturnString( 'wc-api=paynowcallback' );
 
 		// Output the HTML form.
 		$the_form = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
@@ -480,6 +484,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * Check Pay Now IPN response.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return true|string True on success. An "PN_ERROR_" message on failure
 	 */
 	function check_ipn_response() {
 		$this->log( 'check_ipn_response starting' );
@@ -497,30 +503,25 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$completed_statusses = array( 'completed', 'processing' );
 
 			if ( in_array( $order->get_status(), $completed_statusses, true ) ) {
-				$this->log( 'Order has already been completed/processed. Current status: ' . $order->get_status() );
-				return false;
+				$msg = 'Order has already been completed/processed. Current status: ' . $order->get_status();
+				$this->log( $msg );
+				return self::PN_ERROR_ORDER_ALREADY_HANDLED;
 			}
 
 			if ( $order->get_order_key() !== $order_key ) {
 				$this->log( 'Order key object: ' . $order->get_order_key() );
 				$this->log( 'Order key variable: ' . $order_key );
 				$this->log( 'order->order_key != order_key so exiting' );
-
-				return false;
+				return self::PN_ERROR_KEY_MISMATCH;
 			}
 
 			do_action( 'paynow_request_validated', $response->getData() );
 		} else {
-			$error = 'System failed checking ipn_request_valid';
-			$this->log( $error );
-			$this->log( 'Something went wrong! Redirecting to order cancelled.' );
-
-			$order = new WC_Order( $order_id );
-			if ( $order ) {
-				$order->update_status( self::ORDER_STATUS_ON_HOLD, $error );
-			}
-			wp_redirect( $_POST['Extra2'] );
+			$this->log( 'System failed checking ipn_request_valid' );
+			return self::PN_ERROR_GENERAL_ERROR;
 		}
+
+		return true;
 	}
 
 	/**
@@ -564,7 +565,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$order->add_order_note( __( 'Payment was cancelled or declined', 'woothemes' ) );
 
 				if ( $response->wasDeclined() ) {
-					$this->log( "\t Transaction declined");
+					$this->log( "\t Transaction declined" );
 					// translators: Reason is from gateway.
 					$reason = sprintf(
 						'Payment failure reason "%s".',
@@ -573,14 +574,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$order->update_status( self::ORDER_STATUS_FAILED, $reason );
 				}
 				if ( $response->wasCancelled() ) {
-					$this->log( "\t Transaction cancelled");
+					$this->log( "\t Transaction cancelled" );
 					// If the user cancelled, redirect to cancel URL.
 					$this->log( 'Order cancelled by user.' );
 					$order_return_url = html_entity_decode( $order->get_cancel_order_url() );
 					$order->update_status( self::ORDER_STATUS_CANCELLED, __( 'Payment canceled by user.', 'woothemes' ) );
 				}
 			} elseif ( $response->wasAccepted() ) {
-				$this->log( "\t Transaction accepted");
+				$this->log( "\t Transaction accepted" );
 
 				// Success. Mark Order as "Paid".
 				$order->payment_complete();
@@ -603,7 +604,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					}
 				}
 			} else {
-				$this->log( "\t Transaction status could not be determined...");
+				$this->log( "\t Transaction status could not be determined..." );
 
 				// No status detected. Default to on hold.
 				// Translators: Reason is text from Gateway.
@@ -650,23 +651,46 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$response    = new Netcash\PayNowSDK\Response( $_POST );
 		$was_offline = $response->wasOfflineTransaction();
-		$is_pending  = $response->isPending();
 
 		$this->log( 'handle_return_url IS OFFLINE? ' . ( $was_offline ? 'Yes' : 'No' ) );
 
-		if ( isset( $_POST ) && ! empty( $_POST ) && ! $is_pending ) {
+		if ( isset( $_POST ) && ! empty( $_POST ) ) {
 
 			// This is the notification coming in!
 			// Act as an IPN request and forward request to Credit Card method.
 			// Logic is exactly the same.
 
-			$paynow = new WC_Gateway_PayNow();
-			$paynow->check_ipn_response();
-			die();
+			$paynow                    = new WC_Gateway_PayNow();
+			$validation_success_or_msg = $paynow->check_ipn_response();
 
+			if ( true !== $validation_success_or_msg ) {
+				// Oops. Something went wrong.
+				$redirect_url = isset( $_POST['Extra2'] ) ? $_POST['Extra2'] : $url_for_redirect;
+
+				$this->log( 'Something went wrong! Redirecting to order cancelled.' );
+				$this->log( $validation_success_or_msg );
+
+				// Validation failed because the order has been completed.
+				// But if this is a pending request, just redirect to the order page.
+				$is_pending = $response->isPending();
+				if($is_pending) {
+					$order_id = $response->getOrderID();
+					$order    = new WC_Order( $order_id );
+					$redirect_url = $this->get_return_url( $order );
+				}
+
+//				if ( self::PN_ERROR_ORDER_ALREADY_HANDLED !== $validation_success_or_msg ) {
+//					$order->update_status( self::ORDER_STATUS_FAILED, $validation_success_or_msg );
+//				}
+
+				if ( $redirect_url ) {
+					wp_redirect( $redirect_url );
+				}
+			}
 		} else {
+
 			// Probably calling the "redirect" URL.
-			$this->log( __FILE__ . ' Probably calling the "redirect" URL' );
+			$this->log( 'handle_return_url Probably calling the "redirect" URL' );
 
 			if ( $url_for_redirect ) {
 				header( "Location: {$url_for_redirect}" );
