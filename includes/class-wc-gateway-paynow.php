@@ -405,7 +405,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form->setDescription( "{$customer_name} ({$order->get_order_number()})" );
 		$form->setAmount( $order->get_total() );
 
-		// $form->setCellphone($order->get_);
+		$form->setCellphone($order->get_billing_phone());
 		$form->setEmail( $order->get_billing_email() );
 
 		$form->setExtraField( $customer_id, 1 );
