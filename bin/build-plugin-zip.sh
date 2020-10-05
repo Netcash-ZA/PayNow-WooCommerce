@@ -114,7 +114,7 @@ vendor_files=$(ls vendor/netcash/paynow-php-sdk/*.php vendor/netcash/paynow-php-
 
 # Generate the plugin zip file.
 status "Creating archive... 🎁"
-zip -r paynow.zip \
+zip -r gateway-paynow.zip \
 	gateway-paynow.php \
 	paynow_callback.php \
 	assets \

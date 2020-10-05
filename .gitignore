@@ -2,7 +2,7 @@
 build
 build-module
 # Via ./bin/build-plugin
-paynow.zip
+gateway-paynow.zip
 
 # Directories/files that may appear in your environment
 .DS_Store

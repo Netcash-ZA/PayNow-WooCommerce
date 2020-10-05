@@ -1,8 +1,8 @@
-=== WooCommerce Netcash Pay Now Gateway ===
+=== Netcash Pay Now Gateway for WooCommerce ===
 Contributors: iedmdev001
 Tags: woocommerce, payments, south africa, netcash
-Requires at least: 4.5
-Tested up to: 5.2
+Requires at least: 3.5
+Tested up to: 5.5.1
 Requires PHP: 5.6
 Stable tag: 4.0.0
 License: GPLv2 or later

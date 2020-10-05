@@ -8,7 +8,7 @@
  */
 
 /*
-	Plugin Name: WooCommerce Pay Now Gateway
+	Plugin Name: Netcash Pay Now Gateway for WooCommerce
 	Plugin URI: https://github.com/Netcash-ZA/PayNow-WooCommerce
 	Description: A payment gateway for South African payment system, Netcash Pay Now.
 	Version: 4.0.0

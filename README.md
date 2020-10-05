@@ -1,4 +1,4 @@
-Netcash Pay Now WooCommerce Credit Card Payment Module 4.0.0
+Netcash Pay Now Gateway for WooCommerce 4.0.0
 =========================================================
 
 Introduction
