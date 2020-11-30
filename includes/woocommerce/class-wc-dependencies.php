@@ -47,6 +47,22 @@ class WC_Dependencies {
 		return in_array( 'woocommerce/woocommerce.php', self::$active_plugins, true ) || array_key_exists( 'woocommerce/woocommerce.php', self::$active_plugins );
 	}
 
+	/**
+	 * Check if WooCommerce Subscriptions is active
+	 *
+	 * @return bool
+	 */
+	public static function woocommerce_subscriptions_active_check() {
+
+		if ( ! self::$active_plugins ) {
+			self::init();
+		}
+
+		// Class exists 'WC_Subscriptions_Order'?
+		return in_array( 'woocommerce-subscriptions/woocommerce-subscriptions.php', self::$active_plugins, true )
+		       || array_key_exists( 'woocommerce-subscriptions/woocommerce-subscriptions.php', self::$active_plugins );
+	}
+
 }
 
 

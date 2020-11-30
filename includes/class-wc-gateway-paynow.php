@@ -88,6 +88,29 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->url         = 'https://paynow.netcash.co.za/site/paynow.aspx';
 		$this->title       = $this->settings ['title'];
 
+		// Register support for subscriptions
+		$this->supports = [
+			'products',
+			'subscriptions',
+
+			// Not adding this flag can cause subscriptions to be incorrectly suspended when the gateway’s schedule
+			// does not precede the WooCommerce schedule.
+			'gateway_scheduled_payments', // The gateway handles schedule
+
+			// Note: If we can support token based billing without 3D-secure we can rely on Subscriptions’ scheduled payment
+			// hooks to charge each recurring payment, we can then support all of the available features.
+
+			//'subscription_cancellation',
+			//'subscription_suspension',
+			//'subscription_reactivation',
+			//'subscription_amount_changes',
+			//'subscription_date_changes',
+			//'subscription_payment_method_change',
+			//'subscription_payment_method_change_customer',
+			//'subscription_payment_method_change_admin',
+			//'multiple_subscriptions',
+		];
+
 		add_action(
 			'paynow_request_validated',
 			array(
@@ -399,7 +422,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$customer_id   = $order->get_user_id();
 		$netcash_guid  = '7f7a86f8-5642-4595-8824-aa837fc584f2';
 
-		$tokenize = (bool) $this->settings['do_tokenization'];
+		$should_tokenize = (bool) $this->settings['do_tokenization'];
 
 		$form = new \Netcash\PayNowSDK\Form( $this->settings ['service_key'] );
 
@@ -417,8 +440,93 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form->setExtraField( $order->get_cancel_order_url(), 2 );
 		$form->setExtraField( $order->get_order_key(), 3 );
 
-		$form->setReturnCardDetail( $tokenize );
+		$form->setReturnCardDetail( $should_tokenize );
 		$form->setReturnString( 'wc-api=paynowcallback' );
+
+
+		// Subscription?
+//		if (function_exists('wcs_order_contains_subscription')) {
+		if ( is_woocommerce_subscriptions_active() ) {
+			if ( WC_Subscriptions_Order::order_contains_subscription( $order_id ) ) {
+				$this->log( 'Order contains a subscription' );
+
+				$subscriptions = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) );
+				$first_subscription = $subscriptions && count($subscriptions) ? array_shift($subscriptions) : null;
+
+				if ( !$first_subscription ) {
+					throw new \Exception("Expected subscription.");
+				}
+
+				$subscription_start = date('Ymd', $first_subscription->get_time( 'start', 'site' ));
+				$period = $first_subscription->get_billing_period(); // WC_Subscriptions_Order::get_subscription_period( $order );
+
+				// Initial payment and sign up fee is already taken into account in $order->get_total()
+//				$sign_up_fee = $first_subscription->get_sign_up_fee();
+//				$initial_payment = $first_subscription->get_total_initial_payment();
+
+				$price_per_period = WC_Subscriptions_Order::get_recurring_total( $order ); // WC_Subscriptions_Order::get_item_recurring_amount($order, $first_subscription->ID); // $first_subscription->get_recurring_total();
+				$subscription_interval = $first_subscription->get_billing_interval();
+				$subscription_installments = wcs_cart_pluck( WC()->cart, 'subscription_length' );
+
+				// We have a recurring payment.
+				if ($subscription_installments > 1) {
+					$form->setIsSubscription( true );
+
+					// Set a better description for subscriptions.
+					$desc = trim(strip_tags(sprintf('Subsr %s. %s now. Then %s',
+							$order->get_order_number(),
+							wc_price(
+								$order->get_total(),
+								array(
+									'currency'     => $order->get_currency(),
+									'ex_tax_label' => false,
+								)
+							),
+							$first_subscription->get_formatted_order_total()
+					)));
+
+					$form->setDescription( substr($desc,0,50) ); // Pay Now limits to 50 chars
+
+					switch( strtolower( $period ) ) {
+						case 'day':
+							// $form->setSubscriptionFrequency(\Netcash\PayNowSDK\SubscriptionFrequency::DAILY);
+							throw new \Exception("Unsupported Pay Now Frequency '{$period}'.");
+							break;
+						case 'week':
+							$form->setSubscriptionFrequency(\Netcash\PayNowSDK\Types\SubscriptionFrequency::WEEKLY);
+							break;
+						case 'year':
+							$form->setSubscriptionFrequency(\Netcash\PayNowSDK\Types\SubscriptionFrequency::ANNUALLY);
+							break;
+						case 'month':
+						default:
+							$form->setSubscriptionFrequency(\Netcash\PayNowSDK\Types\SubscriptionFrequency::MONTHLY);
+							break;
+					}
+
+					// Calculate sub length (https://docs.woocommerce.com/document/subscriptions/develop/functions/)
+					//$subscription_length = wcs_estimate_periods_between( $subscription->get_time( 'start' ), $subscription->get_time( 'end' ), $subscription->get_billing_period() );
+					//$form->setSubscriptionCycle($subscription_length);
+
+					$form->setSubscriptionStartDate( $subscription_start );
+					$form->setSubscriptionAmount( $price_per_period );
+					$form->setSubscriptionCycle( $subscription_installments );
+
+					$subscription_data = [
+						'amount_now' => $form->getField(\Netcash\PayNowSDK\Types\FieldType::AMOUNT),
+						'description' => $form->getField(\Netcash\PayNowSDK\Types\FieldType::DESCRIPTION),
+						'start' => $form->getField(\Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_START_DATE),
+						'recurring_amount' => $form->getField(\Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_RECURRING_AMOUNT),
+						'frequency' => $form->getField(\Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_FREQUENCY),
+						'cycles' => $form->getField(\Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_CYCLE),
+					];
+
+					$this->log( 'Subscription set.');
+					$this->log( implode('\r\n', $subscription_data) );
+				}
+
+			}
+		}
 
 		// Output the HTML form.
 		$the_form = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
@@ -564,6 +672,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 				$order->add_order_note( __( 'Payment was cancelled or declined', 'woothemes' ) );
 
+				if (is_woocommerce_subscriptions_active()) {
+					// A subscription’s status does not change when a payment fails. However, you should still record failed payments.
+					WC_Subscriptions_Manager::process_subscription_payment_failure_on_order( $order );
+				}
+
 				if ( $response->wasDeclined() ) {
 					$this->log( "\t Transaction declined" );
 					// translators: Reason is from gateway.
@@ -586,9 +699,19 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				// Success. Mark Order as "Paid".
 				$order->payment_complete();
 
+				if (is_woocommerce_subscriptions_active()) {
+					// Activating a Subscription
+					// The 'WC_Subscriptions_Manager::activate_subscriptions_for_order( $order )' method
+					// is fired automatically when an order’s status changes to completed or processing.
+//					WC_Subscriptions_Manager::activate_subscriptions_for_order( $order );
+
+					if ( WC_Subscriptions_Order::order_contains_subscription( $order_id ) ) {
+
+					}
+				}
+
 				if ( $response->wasCreditCardTransaction() ) {
 					// It was a CC transaction.
-
 					if ( isset( $posted['ccHolder'] ) ) {
 						// We have CC detail.
 						$cc_detail  = "Tokenized credit card detail: \r\n";

@@ -29,6 +29,20 @@ if ( ! function_exists( 'is_woocommerce_active' ) ) {
 }
 
 /**
+ * WooCommerce Subscriptions Detection
+ */
+if ( ! function_exists( 'is_woocommerce_subscriptions_active' ) ) {
+	/**
+	 * Checks whether Woocommerce Subscriptions is active.
+	 *
+	 * @return bool
+	 */
+	function is_woocommerce_subscriptions_active() {
+		return WC_Dependencies::woocommerce_active_check();
+	}
+}
+
+/**
  * Queue updates for the WooUpdater
  */
 if ( ! function_exists( 'woothemes_queue_update' ) ) {
