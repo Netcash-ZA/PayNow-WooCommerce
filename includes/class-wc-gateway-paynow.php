@@ -112,6 +112,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		];
 
 		add_action(
+			'woocommerce_subscription_before_actions',
+			array(
+				$this,
+				'show_paynow_subscription_management_notice',
+			)
+		);
+
+		add_action(
 			'paynow_request_validated',
 			array(
 				$this,
@@ -825,5 +833,25 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			}
 		}
 	}
+
+	/**
+	 * Show a notice regarding managing subscriptions.
+	 *
+	 * @param $subscription
+	 */
+	public static function show_paynow_subscription_management_notice($subscription) {
+		$admin_email = get_option('admin_email');
+
+		if ('paynow' !== $subscription->get_payment_method()) {
+			return;
+		}
+		?>
+		<tr>
+			<td colspan="2">
+				To cancel or manage your subscription, please <a href="mailto:<?php echo $admin_email; ?>">contact us</a> or
+				visit the <a target="_blank" href="https://netcash.co.za/">Netcash Pay Now</a> website.
+			</td>
+		</tr>
+	<?php }
 
 }
