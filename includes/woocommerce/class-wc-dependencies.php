@@ -60,7 +60,7 @@ class WC_Dependencies {
 
 		// Class exists 'WC_Subscriptions_Order'?
 		return in_array( 'woocommerce-subscriptions/woocommerce-subscriptions.php', self::$active_plugins, true )
-		       || array_key_exists( 'woocommerce-subscriptions/woocommerce-subscriptions.php', self::$active_plugins );
+			|| array_key_exists( 'woocommerce-subscriptions/woocommerce-subscriptions.php', self::$active_plugins );
 	}
 
 }
