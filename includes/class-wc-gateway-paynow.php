@@ -526,13 +526,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						'cycles'           => $form->getField( \Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_CYCLE ),
 					);
 
-					if ( isset( $_GET['test'] ) ) {
-						echo '<pre> XXX';
-						var_dump( $subscription_data );
-						var_dump( $form->getFields() );
-						die();
-					}
-
 					$this->log( 'Subscription set.' );
 					$this->log( implode( '\r\n', $subscription_data ) );
 				}
