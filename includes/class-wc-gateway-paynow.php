@@ -183,7 +183,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		// Check if the base currency supports this gateway.
-		if ( ! $this->is_valid_for_use() ) {
+		if ( ! $this->is_valid_for_use() || !$this->cart_can_support_subscription_period() ) {
 			$this->enabled = false;
 		}
 	}
@@ -373,12 +373,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function is_valid_for_use() {
 
 		$is_available = false;
-
 		$user_currency = get_option( 'woocommerce_currency' );
 
 		$is_available_currency = in_array( $user_currency, $this->available_currencies, true );
 
-		if ( $is_available_currency && 'yes' === $this->enabled ) {
+		if ( $is_available_currency ) {
 			$is_available = true;
 		}
 
@@ -473,7 +472,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$subscription_installments = wcs_cart_pluck( WC()->cart, 'subscription_length' );
 
 				// We have a recurring payment.
-				if ( $subscription_installments > 1 ) {
+				$infinite_installments = intval($subscription_installments) === 0;
+
+				if ( intval($subscription_installments) > 1 || $infinite_installments ) {
 					$form->setIsSubscription( true );
 
 					// Set a better description for subscriptions.
@@ -853,4 +854,34 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		<?php
 	}
 
+	function cart_can_support_subscription_period() {
+		// Not in backend (admin)
+		if( is_admin() ) {
+			return true;
+		}
+
+		$subscription_period = wcs_cart_pluck( WC()->cart, 'subscription_period', '' );
+		$subscription_length = wcs_cart_pluck( WC()->cart, 'subscription_length' );
+
+		$reason = '';
+		$supported = true;
+		if($subscription_length === '0') {
+			// Does not support infinite length
+			$supported = false;
+			$reason = "Invalid subscription length.";
+		}
+		if($subscription_period === 'day') {
+			// Does not support day
+			$supported = false;
+			$reason = "Invalid subscription period ({$subscription_period}).";
+		}
+
+		if(!$supported) {
+//			unset( $available_gateways['paynow'] );
+			wc_add_notice( __( $reason, 'woocommerce-subscriptions' ), 'error' );
+			$this->log( 'Pay Now payment method removed from cart due to "'.$reason.'"');
+		}
+
+		return $supported;
+	}
 }
