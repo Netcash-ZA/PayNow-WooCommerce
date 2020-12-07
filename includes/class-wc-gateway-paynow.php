@@ -183,7 +183,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		// Check if the base currency supports this gateway.
-		if ( ! $this->is_valid_for_use() || !$this->cart_can_support_subscription_period() ) {
+		if ( ! $this->is_valid_for_use() || ! $this->cart_can_support_subscription_period() ) {
 			$this->enabled = false;
 		}
 	}
@@ -372,7 +372,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	function is_valid_for_use() {
 
-		$is_available = false;
+		$is_available  = false;
 		$user_currency = get_option( 'woocommerce_currency' );
 
 		$is_available_currency = in_array( $user_currency, $this->available_currencies, true );
@@ -472,9 +472,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$subscription_installments = wcs_cart_pluck( WC()->cart, 'subscription_length' );
 
 				// We have a recurring payment.
-				$infinite_installments = intval($subscription_installments) === 0;
+				$infinite_installments = intval( $subscription_installments ) === 0;
 
-				if ( intval($subscription_installments) > 1 || $infinite_installments ) {
+				if ( intval( $subscription_installments ) > 1 || $infinite_installments ) {
 					$form->setIsSubscription( true );
 
 					// Set a better description for subscriptions.
@@ -710,6 +710,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					// is fired automatically when an order’s status changes to completed or processing.
 					// WC_Subscriptions_Manager::activate_subscriptions_for_order( $order );.
 
+					// TODO: Handle subsequent subscription payments?
+
 					if ( WC_Subscriptions_Order::order_contains_subscription( $order_id ) ) {
 
 					}
@@ -854,34 +856,123 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		<?php
 	}
 
+	/**
+	 * Check whether an individual subscription can be supported via Pay Now
+	 *
+	 * @param int $post_id The subscription product/post id
+	 *
+	 * @return bool|string|null True if it is supported. A string with the error message if it is not supported.
+	 *                          Null if it is not a subscription product.
+	 */
+	public function is_subscription_supported( $post_id ) {
+		if ( ! $post_id || ! WC_Subscriptions_Product::is_subscription( $post_id ) ) {
+			// Not a subscription
+			return null;
+		}
+
+		// $subscription = new WC_Product_Subscription( $post_id );
+		$subscription_interval = WC_Subscriptions_Product::get_interval( $post_id );
+		$subscription_period   = WC_Subscriptions_Product::get_period( $post_id );
+		$subscription_length   = (int) WC_Subscriptions_Product::get_length( $post_id );
+
+		$product_title = get_the_title( $post_id );
+
+		$reason    = '';
+		$supported = true;
+		if ( $subscription_length === 0 ) {
+			// Does not support infinite length
+			$supported = false;
+			$reason    = __( "Infinite subscription lengths are not supported for {$product_title}.", 'paynow' );
+		}
+		if ( $subscription_period === 'day' ) {
+			// Does not support day
+			$supported = false;
+			$reason    = __( "The period '{$subscription_period}' is an unsupported subscription period for '{$product_title}'.", 'paynow' );
+		}
+
+		if ( ! $supported ) {
+			return $reason;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check whether the cart supports the subscription models
+	 *
+	 * @return bool
+	 */
 	function cart_can_support_subscription_period() {
-		// Not in backend (admin)
-		if( is_admin() ) {
+
+		if ( ! is_woocommerce_subscriptions_active() ) {
+			// No need to run if subscriptions plugin isn't active.
 			return true;
 		}
 
-		$subscription_period = wcs_cart_pluck( WC()->cart, 'subscription_period', '' );
-		$subscription_length = wcs_cart_pluck( WC()->cart, 'subscription_length' );
-
-		$reason = '';
-		$supported = true;
-		if($subscription_length === '0') {
-			// Does not support infinite length
-			$supported = false;
-			$reason = "Invalid subscription length.";
-		}
-		if($subscription_period === 'day') {
-			// Does not support day
-			$supported = false;
-			$reason = "Invalid subscription period ({$subscription_period}).";
+		if ( is_admin() ) {
+			// Not in backend (admin).
+			return true;
 		}
 
-		if(!$supported) {
-//			unset( $available_gateways['paynow'] );
-			wc_add_notice( __( $reason, 'woocommerce-subscriptions' ), 'error' );
-			$this->log( 'Pay Now payment method removed from cart due to "'.$reason.'"');
+		$subscription_id = null;
+
+		foreach ( WC()->cart->get_cart() as $item ) {
+			if ( isset( $item['product_id'] ) ) {
+				if ( WC_Subscriptions_Product::is_subscription( $item['product_id'] ) ) {
+					$subscription_id = $item['product_id'];
+					break;
+				}
+			}
 		}
 
-		return $supported;
+		$supported_or_reason = self::is_subscription_supported( $subscription_id );
+		if ( true !== $supported_or_reason ) {
+			// unset( $available_gateways['paynow'] );
+			wc_add_notice( __( "Pay Now: {$supported_or_reason}", 'paynow' ), 'error' );
+			$this->log( 'Pay Now payment method removed from cart due to "' . $supported_or_reason . '"' );
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Hook into the WordPress save hook
+	 *
+	 * @param int $post_id The post id
+	 */
+	public static function admin_show_unsupported_message( $post_id = null, $post = null, $update = null ) {
+
+		if ( ! is_woocommerce_subscriptions_active() ) {
+			// No need to run if subscriptions plugin isn't active.
+			return;
+		}
+
+		if ( ! $post_id ) {
+			$post_id = isset( $_GET['post'] ) ? (int) $_GET['post'] : null;
+		}
+
+		if ( ! is_admin() ) {
+			return;
+		}
+
+		if ( ! $post_id || ! WC_Subscriptions_Product::is_subscription( $post_id ) ) {
+			// Not a subscription
+			return;
+		}
+
+		$supported_or_reason = self::is_subscription_supported( $post_id );
+
+		if ( true !== $supported_or_reason ) {
+			$message  = "Please note Pay Now is not supported for subscription {$post_id} due to the following:\r\n";
+			$message .= "{$supported_or_reason}";
+			add_action(
+				'admin_notices',
+				function() use ( $message ) {
+					WC_Gateway_PayNow::error_notice_general( $message );
+				}
+			);
+		}
+
 	}
 }

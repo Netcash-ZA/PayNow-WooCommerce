@@ -35,6 +35,13 @@ load_plugin_textdomain( 'wc_paynow', false, trailingslashit( dirname( plugin_bas
 
 add_action( 'plugins_loaded', 'woocommerce_paynow_init', 0 );
 
+// Show warning if subscription period or cycle is not supported.
+add_action(
+	'admin_init',
+	array( 'WC_Gateway_PayNow', 'admin_show_unsupported_message' )
+);
+
+
 /**
  * Initialize the gateway.
  *
