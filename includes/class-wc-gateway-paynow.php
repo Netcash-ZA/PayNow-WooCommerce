@@ -11,7 +11,7 @@
  * @since      1.0.0
  */
 
-use Netcash\PayNowSDK\Response;
+use Netcash\PayNow\Response;
 
 /**
  * Class WC_Gateway_PayNow
@@ -262,7 +262,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		if ( empty( $this->get_errors() ) ) {
 			// No errors thus far, so Validate Service Keys here.
-			$validator = new Netcash\PayNowSDK\KeysValidator();
+			$validator = new Netcash\PayNow\KeysValidator();
 			$validator->setVendorKey( '7f7a86f8-5642-4595-8824-aa837fc584f2' );
 
 			try {
@@ -417,7 +417,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @param int $order_id The WooCommerce Order ID.
 	 *
 	 * @return string
-	 * @throws ReflectionException|\Netcash\PayNowSDK\Exceptions\ValidationException
+	 * @throws ReflectionException|\Netcash\PayNow\Exceptions\ValidationException
 	 * @since 1.0.0
 	 */
 	public function generate_paynow_form( $order_id ) {
@@ -433,7 +433,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$should_tokenize = (bool) $this->settings['do_tokenization'];
 
-		$form = new \Netcash\PayNowSDK\Form( $this->settings ['service_key'] );
+		$form = new \Netcash\PayNow\Form( $this->settings ['service_key'] );
 
 		$form->setField( 'm2', $netcash_guid );
 		$form->setField( 'm3', $netcash_guid );
@@ -501,28 +501,28 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 					switch ( strtolower( $period ) ) {
 						case 'day':
-							// $form->setSubscriptionFrequency(\Netcash\PayNowSDK\SubscriptionFrequency::DAILY);
+							// $form->setSubscriptionFrequency(\Netcash\PayNow\SubscriptionFrequency::DAILY);
 							throw new \Exception( "Unsupported Pay Now Frequency '{$period}'." );
 							break;
 						case 'week':
 							if ($subscription_interval === 2) {
-								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::BI_WEEKLY );
+								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::BI_WEEKLY );
 							} else {
-								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::WEEKLY );
+								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::WEEKLY );
 							}
 							break;
 						case 'year':
-							$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::ANNUALLY );
+							$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::ANNUALLY );
 							break;
 						case 'month':
 							// fall through
 						default:
 							if ($subscription_interval === 6) {
-								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::SIX_MONTHLY );
+								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::SIX_MONTHLY );
 							} elseif ($subscription_interval === 4) {
-								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::QUARTERLY );
+								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::QUARTERLY );
 							} else {
-								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::MONTHLY );
+								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::MONTHLY );
 							}
 							break;
 					}
@@ -532,12 +532,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					$form->setSubscriptionCycle( $subscription_installments );
 
 					$subscription_data = array(
-						'amount_now'       => $form->getField( \Netcash\PayNowSDK\Types\FieldType::AMOUNT ),
-						'description'      => $form->getField( \Netcash\PayNowSDK\Types\FieldType::DESCRIPTION ),
-						'start'            => $form->getField( \Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_START_DATE ),
-						'recurring_amount' => $form->getField( \Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_RECURRING_AMOUNT ),
-						'frequency'        => $form->getField( \Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_FREQUENCY ),
-						'cycles'           => $form->getField( \Netcash\PayNowSDK\Types\FieldType::SUBSCRIPTION_CYCLE ),
+						'amount_now'       => $form->getField( \Netcash\PayNow\Types\FieldType::AMOUNT ),
+						'description'      => $form->getField( \Netcash\PayNow\Types\FieldType::DESCRIPTION ),
+						'start'            => $form->getField( \Netcash\PayNow\Types\FieldType::SUBSCRIPTION_START_DATE ),
+						'recurring_amount' => $form->getField( \Netcash\PayNow\Types\FieldType::SUBSCRIPTION_RECURRING_AMOUNT ),
+						'frequency'        => $form->getField( \Netcash\PayNow\Types\FieldType::SUBSCRIPTION_FREQUENCY ),
+						'cycles'           => $form->getField( \Netcash\PayNow\Types\FieldType::SUBSCRIPTION_CYCLE ),
 					);
 
 					$this->log( 'Subscription set.' );
@@ -616,8 +616,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function check_ipn_response() {
 		$this->log( 'check_ipn_response starting' );
 
-		$paynow   = new Netcash\PayNowSDK\PayNow();
-		$response = new Netcash\PayNowSDK\Response( $_POST );
+		$paynow   = new Netcash\PayNow\PayNow();
+		$response = new Netcash\PayNow\Response( $_POST );
 
 		$order_id  = esc_attr( $response->getOrderID() );
 		$order     = new WC_Order( $order_id );
@@ -792,7 +792,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$url_for_redirect .= '/my-account/';
 		$this->log( 'handle_return_url POST: ' . print_r( $_REQUEST, true ) );
 
-		$response    = new Netcash\PayNowSDK\Response( $_POST );
+		$response    = new Netcash\PayNow\Response( $_POST );
 		$was_offline = $response->wasOfflineTransaction();
 
 		$this->log( 'handle_return_url IS OFFLINE? ' . ( $was_offline ? 'Yes' : 'No' ) );

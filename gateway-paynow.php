@@ -61,9 +61,9 @@ function woocommerce_paynow_init() {
 	/**
 	 * Include Pay Now SDK autoloader
 	 */
-	require_once( plugin_basename( 'vendor/netcash/paynow-php-sdk/AutoLoader.php' ) );
+	require_once( plugin_basename( 'vendor/netcash/paynow-php/AutoLoader.php' ) );
 	// Autoload the SDK.
-	\Netcash\PayNowSDK\AutoLoader::register();
+	\Netcash\PayNow\AutoLoader::register();
 
 	add_filter( 'woocommerce_payment_gateways', 'woocommerce_paynow_add_gateway' );
 

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "594e5bf288cbc793b7fa1f3a63461778",
+    "content-hash": "77ac3e695e80fbb642b25c9abf48ee94",
     "packages": [
         {
             "name": "composer/installers",
@@ -131,15 +131,25 @@
                 "zend",
                 "zikula"
             ],
+            "funding": [
+                {
+                    "url": "https://packagist.com",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/composer/composer",
+                    "type": "tidelift"
+                }
+            ],
             "time": "2020-04-07T06:57:05+00:00"
         },
         {
-            "name": "netcash/paynow-php-sdk",
+            "name": "netcash/paynow-php",
             "version": "dev-master",
-            "dist": {
-                "type": "path",
-                "url": "../PayNow-SDK",
-                "reference": "c3ab509fef003c65af1b2dd3c40cf7a125567023"
+            "source": {
+                "type": "git",
+                "url": "https://github.com/iedev1/paynow-php",
+                "reference": "c1413762c7969befb6cfbb368317f332ad064b8f"
             },
             "require": {
                 "ext-soap": "*",
@@ -152,13 +162,13 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "Netcash\\PayNowSDK\\": "src/"
+                    "Netcash\\PayNow\\": "src/"
                 },
                 "files": []
             },
             "autoload-dev": {
                 "psr-4": {
-                    "Netcash\\PayNowSDK\\Tests\\": "tests/"
+                    "Netcash\\PayNow\\Tests\\": "tests/"
                 }
             },
             "scripts": {
@@ -182,7 +192,7 @@
                     "homepage": "https://iedm.co.za/"
                 }
             ],
-            "description": "This SDK helps to interact with the Netcash Pay Now gateway",
+            "description": "This library helps to interact with the Netcash Pay Now gateway",
             "homepage": "http://netcash.co.za/",
             "keywords": [
                 "netcash",
@@ -190,9 +200,7 @@
                 "paynow",
                 "south africa"
             ],
-            "transport-options": {
-                "symlink": true
-            }
+            "time": "2020-12-09T08:00:07+00:00"
         }
     ],
     "packages-dev": [
@@ -322,24 +330,24 @@
         },
         {
             "name": "sirbrillig/phpcs-variable-analysis",
-            "version": "v2.8.3",
+            "version": "v2.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sirbrillig/phpcs-variable-analysis.git",
-                "reference": "00b4fa3130faa26762c929989e3d958086c627f1"
+                "reference": "50486555fae72a6401ad0337d0b71fd9e775b2f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sirbrillig/phpcs-variable-analysis/zipball/00b4fa3130faa26762c929989e3d958086c627f1",
-                "reference": "00b4fa3130faa26762c929989e3d958086c627f1",
+                "url": "https://api.github.com/repos/sirbrillig/phpcs-variable-analysis/zipball/50486555fae72a6401ad0337d0b71fd9e775b2f2",
+                "reference": "50486555fae72a6401ad0337d0b71fd9e775b2f2",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.4.0",
-                "squizlabs/php_codesniffer": "^3.1"
+                "squizlabs/php_codesniffer": "^3.5"
             },
             "require-dev": {
-                "dealerdirect/phpcodesniffer-composer-installer": "^0.4.4 || ^0.5 || ^0.6",
+                "dealerdirect/phpcodesniffer-composer-installer": "^0.7.0",
                 "limedeck/phpunit-detailed-printer": "^3.1 || ^4.0 || ^5.0",
                 "phpstan/phpstan": "^0.11.8",
                 "phpunit/phpunit": "^5.0 || ^6.5 || ^7.0 || ^8.0",
@@ -366,20 +374,20 @@
                 }
             ],
             "description": "A PHPCS sniff to detect problems with variables.",
-            "time": "2020-07-11T23:32:06+00:00"
+            "time": "2020-11-23T17:43:05+00:00"
         },
         {
             "name": "squizlabs/php_codesniffer",
-            "version": "3.5.6",
+            "version": "3.5.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/squizlabs/PHP_CodeSniffer.git",
-                "reference": "e97627871a7eab2f70e59166072a6b767d5834e0"
+                "reference": "9d583721a7157ee997f235f327de038e7ea6dac4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/squizlabs/PHP_CodeSniffer/zipball/e97627871a7eab2f70e59166072a6b767d5834e0",
-                "reference": "e97627871a7eab2f70e59166072a6b767d5834e0",
+                "url": "https://api.github.com/repos/squizlabs/PHP_CodeSniffer/zipball/9d583721a7157ee997f235f327de038e7ea6dac4",
+                "reference": "9d583721a7157ee997f235f327de038e7ea6dac4",
                 "shasum": ""
             },
             "require": {
@@ -417,7 +425,7 @@
                 "phpcs",
                 "standards"
             ],
-            "time": "2020-08-10T04:50:15+00:00"
+            "time": "2020-10-23T02:01:07+00:00"
         },
         {
             "name": "wp-coding-standards/wpcs",
@@ -467,7 +475,7 @@
         },
         {
             "name": "wp-phpunit/wp-phpunit",
-            "version": "5.5.1",
+            "version": "5.5.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wp-phpunit/wp-phpunit.git",
@@ -512,10 +520,11 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "netcash/paynow-php-sdk": 20
+        "netcash/paynow-php": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
-    "platform-dev": []
+    "platform-dev": [],
+    "plugin-api-version": "1.1.0"
 }
