@@ -464,8 +464,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					throw new \Exception( 'Expected subscription.' );
 				}
 
-				$subscription_start = gmdate( 'Ymd', $first_subscription->get_time( 'start', 'site' ) );
+				$subscription_start = gmdate( 'Y-m-d', $first_subscription->get_time( 'next_payment', 'site' ) );
 				$period             = $first_subscription->get_billing_period();
+
+				$subscription_interval = (int) $first_subscription->get_billing_interval(); //wcs_cart_pluck( WC()->cart, 'subscription_interval' ); // (int) WC_Subscriptions_Product::get_interval( $post_id );
 
 				// Initial payment and sign up fee is already taken into account in $order->get_total().
 				$price_per_period          = WC_Subscriptions_Order::get_recurring_total( $order );
@@ -503,14 +505,25 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 							throw new \Exception( "Unsupported Pay Now Frequency '{$period}'." );
 							break;
 						case 'week':
-							$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::WEEKLY );
+							if ($subscription_interval === 2) {
+								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::BI_WEEKLY );
+							} else {
+								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::WEEKLY );
+							}
 							break;
 						case 'year':
 							$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::ANNUALLY );
 							break;
 						case 'month':
+							// fall through
 						default:
-							$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::MONTHLY );
+							if ($subscription_interval === 6) {
+								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::SIX_MONTHLY );
+							} elseif ($subscription_interval === 4) {
+								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::QUARTERLY );
+							} else {
+								$form->setSubscriptionFrequency( \Netcash\PayNowSDK\Types\SubscriptionFrequency::MONTHLY );
+							}
 							break;
 					}
 
@@ -864,14 +877,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @return bool|string|null True if it is supported. A string with the error message if it is not supported.
 	 *                          Null if it is not a subscription product.
 	 */
-	public function is_subscription_supported( $post_id ) {
+	public static function is_subscription_supported( $post_id ) {
 		if ( ! $post_id || ! WC_Subscriptions_Product::is_subscription( $post_id ) ) {
 			// Not a subscription
 			return null;
 		}
 
 		// $subscription = new WC_Product_Subscription( $post_id );
-		$subscription_interval = WC_Subscriptions_Product::get_interval( $post_id );
+		$subscription_interval = (int) WC_Subscriptions_Product::get_interval( $post_id );
 		$subscription_period   = WC_Subscriptions_Product::get_period( $post_id );
 		$subscription_length   = (int) WC_Subscriptions_Product::get_length( $post_id );
 
@@ -881,6 +894,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$supported = true;
 		if ( $subscription_length === 0 ) {
 			// Does not support infinite length
+			// TODO: Set to 9999?
 			$supported = false;
 			$reason    = __( "Infinite subscription lengths are not supported for {$product_title}.", 'paynow' );
 		}
@@ -888,6 +902,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// Does not support day
 			$supported = false;
 			$reason    = __( "The period '{$subscription_period}' is an unsupported subscription period for '{$product_title}'.", 'paynow' );
+		}
+
+		if ($subscription_period === 'week' && $subscription_interval > 2) {
+			// Only supports every week or every 2 weeks
+			$supported = false;
+			$reason    = __( "Every '{$subscription_interval}' weeks is an unsupported subscription cycle for '{$product_title}'.", 'paynow' );
+		}
+
+		if ($subscription_period === 'month' && !in_array($subscription_interval, array(1, 4, 6) )) {
+			// Only supports every month, every 4 months (quarterly), or every 6 months
+			$supported = false;
+			$reason    = __( "Every '{$subscription_period}' months is an unsupported subscription cycle for '{$product_title}'.", 'paynow' );
 		}
 
 		if ( ! $supported ) {
