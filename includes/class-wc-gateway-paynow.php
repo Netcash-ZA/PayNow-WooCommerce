@@ -942,11 +942,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$subscription_id = null;
 
-		foreach ( WC()->cart->get_cart() as $item ) {
-			if ( isset( $item['product_id'] ) ) {
-				if ( WC_Subscriptions_Product::is_subscription( $item['product_id'] ) ) {
-					$subscription_id = $item['product_id'];
-					break;
+		if (WC()->cart) {
+			foreach ( WC()->cart->get_cart() as $item ) {
+				if ( isset( $item['product_id'] ) ) {
+					if ( WC_Subscriptions_Product::is_subscription( $item['product_id'] ) ) {
+						$subscription_id = $item['product_id'];
+						break;
+					}
 				}
 			}
 		}
