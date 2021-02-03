@@ -501,7 +501,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 					switch ( strtolower( $period ) ) {
 						case 'day':
-							// $form->setSubscriptionFrequency(\Netcash\PayNow\SubscriptionFrequency::DAILY);
+//							 $form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::DAILY );
 							throw new \Exception( "Unsupported Pay Now Frequency '{$period}'." );
 							break;
 						case 'week':
@@ -614,6 +614,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @return true|string True on success. An "PN_ERROR_" message on failure
 	 */
 	function check_ipn_response() {
+		// TODO: Success and IPN comes to same endpoint..
 		$this->log( 'check_ipn_response starting' );
 
 		$paynow   = new Netcash\PayNow\PayNow();
@@ -624,11 +625,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$order_key = esc_attr( $response->getExtra( 3 ) );
 
 		if ( ! $paynow->validateResponse( $_POST, $order->get_id(), $order->get_total() ) ) {
-			$this->log( 'OK:valid Pay Now response' );
+			$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
+
+			$this->log( 'OK:valid Pay Now response', [
+				'is_subscription' => $is_subscription ? 'Yes' : 'No'
+			] );
 
 			$completed_statusses = array( 'completed', 'processing' );
-
-			if ( in_array( $order->get_status(), $completed_statusses, true ) ) {
+			if ( !$is_subscription && in_array( $order->get_status(), $completed_statusses, true ) ) {
 				$msg = 'Order has already been completed/processed. Current status: ' . $order->get_status();
 				$this->log( $msg );
 				return self::PN_ERROR_ORDER_ALREADY_HANDLED;
@@ -664,7 +668,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$response = new Response( $posted );
 
 		$order_id = $response->getOrderID();
+		$transaction_id = $posted['RequestTrace'];
+
 		$order    = new WC_Order( $order_id );
+		$order_return_url = $this->get_return_url( $order );
 		// $order_key = $response->getExtra(3);
 
 		if ( $order->get_status() === 'completed' ) {
@@ -674,7 +681,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$cancel_redirect_url = $response->getExtra( 2 );
 
 		$this->log( '- current order status: ' . $order->get_status() );
-		$order_return_url = $this->get_return_url( $order );
 
 		if ( $response->isPending() ) {
 			// Still waiting... (E.g., EFT, or in-store).
@@ -797,6 +803,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * Log system processes.
 	 *
 	 * @param string $message The log message.
+	 * @param array  $extra  Additional log data
 	 *
 	 * @since 1.0.0
 	 */
@@ -962,12 +969,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @param int $post_id The subscription product/post id
 	 *
 	 * @return bool|string|null True if it is supported. A string with the error message if it is not supported.
-	 *                          Null if it is not a subscription product.
 	 */
 	public static function is_subscription_supported( $post_id ) {
 		if ( ! $post_id || ! WC_Subscriptions_Product::is_subscription( $post_id ) ) {
 			// Not a subscription
-			return null;
+			return true;
 		}
 
 		// $subscription = new WC_Product_Subscription( $post_id );
@@ -976,7 +982,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$subscription_length   = (int) WC_Subscriptions_Product::get_length( $post_id );
 
 		$product_title = get_the_title( $post_id );
-
 		$reason    = '';
 		$supported = true;
 		if ( $subscription_length === 0 ) {
@@ -985,6 +990,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$supported = false;
 			$reason    = __( "Infinite subscription lengths are not supported for {$product_title}.", 'paynow' );
 		}
+
 		if ( $subscription_period === 'day' ) {
 			// Does not support day
 			$supported = false;
@@ -1023,7 +1029,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		if ( is_admin() ) {
-			// Not in backend (admin).
+			// Don't run in backend (admin).
 			return true;
 		}
 
@@ -1055,12 +1061,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * Hook into the WordPress save hook
+	 * Hook into the WordPress page display hook
 	 *
 	 * @param int $post_id The post id
 	 */
 	public static function admin_show_unsupported_message( $post_id = null, $post = null, $update = null ) {
-
 		if ( ! is_woocommerce_subscriptions_active() ) {
 			// No need to run if subscriptions plugin isn't active.
 			return;
