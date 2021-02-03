@@ -38,7 +38,7 @@ if ( ! function_exists( 'is_woocommerce_subscriptions_active' ) ) {
 	 * @return bool
 	 */
 	function is_woocommerce_subscriptions_active() {
-		return WC_Dependencies::woocommerce_active_check();
+		return WC_Dependencies::woocommerce_subscriptions_active_check();
 	}
 }
 
