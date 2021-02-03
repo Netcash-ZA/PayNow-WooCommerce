@@ -800,12 +800,52 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @since 1.0.0
 	 */
-	function log( $message ) {
+	function log( $message, $extra = [] ) {
 		if ( ( 'yes' !== $this->settings['send_debug_email'] && ! is_admin() ) ) {
 			return;
 		}
 
-		error_log( $message );
+		$date = date('Y-m-d');
+		$DIR = realpath(dirname(__FILE__) . "/../logs");
+		$FILE = $DIR . "/general-{$date}.log";
+
+		$fh = null;
+		// If file doesn't exist, create it
+		if (!$fh) {
+			if( !is_dir($DIR) ) {
+				@mkdir($DIR);
+			}
+			$fh = fopen ( $FILE, 'a+' );
+		}
+
+		if (!is_writeable($FILE)) {
+			error_log($message);
+			return;
+		}
+
+		// If file was successfully opened
+		if ($fh) {
+			if( is_bool($extra) ) {
+				$data_string = " | " . ($extra ? 'True' : 'False');
+			} elseif( is_string($extra) ) {
+				$data_string = " | " . $extra;
+			} else {
+				$data_string = empty( $extra ) ? "" : " | " . print_r( $extra, true );
+			}
+			$line = sprintf("%s: %s %s \n",
+				date( 'Y-m-d H:i:s' ),
+				$message,
+				$data_string
+			);
+
+			if ( false === fwrite ( $fh, $line ) ) {
+				error_log($message);
+				return;
+			}
+
+			fclose ( $fh );
+		}
+
 	}
 
 	/**
