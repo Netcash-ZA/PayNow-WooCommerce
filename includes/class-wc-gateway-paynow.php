@@ -979,9 +979,12 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		$supported_or_reason = self::is_subscription_supported( $subscription_id );
+
 		if ( true !== $supported_or_reason ) {
 			// unset( $available_gateways['paynow'] );
-			wc_add_notice( __( "Pay Now: {$supported_or_reason}", 'paynow' ), 'error' );
+			if (function_exists('wc_add_notice')) {
+				wc_add_notice( __( "Pay Now: {$supported_or_reason}", 'paynow' ), 'error' );
+			}
 			$this->log( 'Pay Now payment method removed from cart due to "' . $supported_or_reason . '"' );
 			return false;
 		}
