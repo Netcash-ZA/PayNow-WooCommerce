@@ -869,7 +869,29 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// Logic is exactly the same.
 
 			$paynow                    = new WC_Gateway_PayNow();
+
+			// Wait for one of success or IPN to finish first
+			// TODO: This is not ideal. But currently Success & Notify both come here.
+			// We can't specify additional any additional parameters to separate the requests.
+			sleep(rand(100, 900)/1000); // sleep for 0.1 - 0.9 seconds
+
 			$validation_success_or_msg = $paynow->check_ipn_response();
+			if($validation_success_or_msg === self::PN_ERROR_ORDER_ALREADY_HANDLED) {
+
+				// Just redirect to success. The IPN request will trigger the payment success and order status changes
+				$this->log( 'handle_return_url ACCEPT URL', [
+					'validation_msg' => $validation_success_or_msg,
+				]);
+
+				$order_id  = esc_attr( $response->getOrderID() );
+				$order     = new WC_Order( $order_id );
+				$order_return_url = $this->get_return_url( $order );
+				// WordPress redirect.
+				wp_redirect( $order_return_url );
+				// JavaScript redirect.
+				echo "<script>window.location='$order_return_url'</script>";
+				exit();
+			}
 
 			if ( true !== $validation_success_or_msg ) {
 				// Oops. Something went wrong.
