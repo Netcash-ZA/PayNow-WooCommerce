@@ -119,12 +119,13 @@ zip -r gateway-paynow.zip \
 	paynow_callback.php \
 	assets \
 	includes \
+	logs \
 	$vendor_files \
 	readme.txt \
 	changelog.txt \
 	README.md
 
-# Reset `gutenberg.php`.
-#git checkout gutenberg.php
+# Reset `gateway-paynow.php`.
+#git checkout gateway-paynow.php
 
 success "Done. You've built the plugin! 🎉 "
