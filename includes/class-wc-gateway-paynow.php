@@ -692,7 +692,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 				if ( is_woocommerce_subscriptions_active() ) {
 					// A subscription’s status does not change when a payment fails. However, you should still record failed payments.
-					WC_Subscriptions_Manager::process_subscription_payment_failure_on_order( $order );
+					$subscriptions_in_order = WC_Subscriptions_Order::get_recurring_items( $order );
+					$subscription_item      = array_pop( $subscriptions_in_order );
+					$subscription_key       = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item['id'] );
+					WC_Subscriptions_Manager::process_subscription_payment_failure( $order->customer_user, $subscription_key );
 				}
 
 				if ( $response->wasDeclined() ) {
@@ -714,20 +717,42 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			} elseif ( $response->wasAccepted() ) {
 				$this->log( "\t Transaction accepted" );
 
-				// Success. Mark Order as "Paid".
-				$order->payment_complete();
+				$subscription_key = null;
+				$is_subscription_payment = false;
+				$first_subscription_payment = false;
 
 				if ( is_woocommerce_subscriptions_active() ) {
-					// Activating a Subscription
-					// The 'WC_Subscriptions_Manager::activate_subscriptions_for_order( $order )' method
-					// is fired automatically when an order’s status changes to completed or processing.
-					// WC_Subscriptions_Manager::activate_subscriptions_for_order( $order );.
+					if ( WC_Subscriptions_Order::order_contains_subscription( $order ) ) {
+						$is_subscription_payment = true;
 
-					// TODO: Handle subsequent subscription payments?
-
-					if ( WC_Subscriptions_Order::order_contains_subscription( $order_id ) ) {
-
+						$subscriptions_in_order = WC_Subscriptions_Order::get_recurring_items( $order );
+						$subscription_item      = array_pop( $subscriptions_in_order );
+						$subscription_key       = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item['id'] );
+						$subscription           = WC_Subscriptions_Manager::get_subscription( $subscription_key, $order->customer_user );
+						// First payment on order, process payment & activate subscription
+						if(empty( $subscription['completed_payments'] )) {
+							$first_subscription_payment = true;
+						}
 					}
+				}
+
+				if($is_subscription_payment) {
+					if($first_subscription_payment) {
+						$this->log( "\t First subscription payment recorded for order {$order_id}." );
+						// First payment on order, process payment & activate subscription
+						$order->payment_complete( $transaction_id );
+						WC_Subscriptions_Manager::activate_subscriptions_for_order( $order );
+					} else {
+						$this->log( "\t Subsequent subscription payment recorded for order {$order_id}." );
+						// Subsequent subscription payments are recorded here
+						// https://docs.woocommerce.com/document/subscriptions/develop/payment-gateway-integration/#recording-payments
+//						WC_Subscriptions_Manager::process_subscription_payment( $order->customer_user, $subscription_key );
+						WC_Subscriptions_Manager::process_subscription_payments_on_order( $order );
+						$order->add_order_note( "Subscription payment recorded." );
+					}
+				} else {
+					// Regular order payment
+					$order->payment_complete( $transaction_id );
 				}
 
 				if ( $response->wasCreditCardTransaction() ) {
