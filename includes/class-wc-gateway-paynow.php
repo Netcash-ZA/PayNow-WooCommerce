@@ -216,13 +216,24 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public static function netcash_notice_urls() {
 
+		$is_settings_page = isset($_GET['page']) && $_GET['page'] == 'wc-settings';
+		$is_checkout_tab = isset($_GET['tab']) && $_GET['tab'] == 'checkout';
+		$is_paynow_section = isset($_GET['section']) && $_GET['section'] == 'paynow';
+
+		if ( !$is_settings_page || !$is_checkout_tab || !$is_paynow_section) {
+			// Only show on Pay Now settings page
+			return;
+		}
+
 		$url = home_url( '/' );
+		$plugin_url = str_replace('includes/', '', plugin_dir_url(__FILE__));
 
 		$s = '';
 
 		$msg  = '<strong>Netcash Connecter URLs:</strong><br>';
-		$msg .= 'Use the following URLs:<br>';
-		$msg .= "<strong>Accept</strong>, <strong>Decline</strong>, <strong>Notify</strong>, and <strong>Redirect</strong> URL: <code style='{$s}'>{$url}</code><br>";
+		//$msg .= 'Use the following URLs:<br>';
+		$msg .= "<strong>Accept</strong>, <strong>Decline</strong>, and <strong>Redirect</strong> URL: <code style='{$s}'>{$url}</code><br>";
+		$msg .= "<strong>Notify</strong> URL: <code style='{$s}'>{$plugin_url}notify-callback.php</code><br>";
 		// $msg .= "<strong>Notify</strong> and <strong>Redirect</strong> URL: <code style='{$s}'>{$url2}</code>";
 		self::error_notice_general( $msg, 'info' );
 	}
@@ -640,10 +651,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$order     = new WC_Order( $order_id );
 		$order_key = esc_attr( $response->getExtra( 3 ) );
 
-		if ( ! $paynow->validateResponse( $_POST, $order->get_id(), $order->get_total() ) ) {
+		$validated_response = $paynow->validateResponse( $_POST, $order->get_id(), floatval($order->get_total()) );
+		if ( false !== $validated_response ) {
 			$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
 
-			$this->log( 'OK:valid Pay Now response', [
+			$this->log( 'Valid Pay Now response', [
 				'is_subscription' => $is_subscription ? 'Yes' : 'No'
 			] );
 
@@ -660,8 +672,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$this->log( 'order->order_key != order_key so exiting' );
 				return self::PN_ERROR_KEY_MISMATCH;
 			}
-
-			do_action( 'paynow_request_validated', $response->getData() );
 		} else {
 			$this->log( 'System failed checking ipn_request_valid' );
 			return self::PN_ERROR_GENERAL_ERROR;
@@ -892,84 +902,59 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * The old "paynow_callback.php" file
 	 */
 	public function handle_return_url() {
-		$url_for_redirect  = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
-		$url_for_redirect .= '/my-account/';
-		$this->log( 'handle_return_url POST: ' . print_r( $_REQUEST, true ) );
+		// This is for accept/decline and redirect.
+		// The Notify URL will go to ../notify-callback.php which will manage WooCommerce.
+		// Here, we just redirect the user
 
 		$response    = new Netcash\PayNow\Response( $_POST );
-		$was_offline = $response->wasOfflineTransaction();
+		$this->log( 'handle_return_url ', [
+			'order' => $response->getOrderID(),
+			'offline' => $response->wasOfflineTransaction() ? 'Yes' : 'No',
 
-		$this->log( 'handle_return_url IS OFFLINE? ' . ( $was_offline ? 'Yes' : 'No' ) );
+			'wasAccepted' => $response->wasAccepted() ? 'Yes' : 'No',
+			'isPending' => $response->isPending() ? 'Yes' : 'No',
+			'wasDeclined' => $response->wasDeclined() ? 'Yes' : 'No',
+			'wasCancelled' => $response->wasCancelled() ? 'Yes' : 'No',
+		]);
 
-		if ( isset( $_POST ) && ! empty( $_POST ) ) {
+		$redirect_url = '';
 
-			// This is the notification coming in!
-			// Act as an IPN request and forward request to Credit Card method.
-			// Logic is exactly the same.
+		$order_id  = esc_attr( $response->getOrderID() );
+		$order     = new WC_Order( $order_id );
 
-			$paynow                    = new WC_Gateway_PayNow();
-
-			// Wait for one of success or IPN to finish first
-			// TODO: This is not ideal. But currently Success & Notify both come here.
-			// We can't specify additional any additional parameters to separate the requests.
-			sleep(rand(100, 900)/1000); // sleep for 0.1 - 0.9 seconds
-
-			$validation_success_or_msg = $paynow->check_ipn_response();
-			if($validation_success_or_msg === self::PN_ERROR_ORDER_ALREADY_HANDLED) {
-
-				// Just redirect to success. The IPN request will trigger the payment success and order status changes
-				$this->log( 'handle_return_url ACCEPT URL', [
-					'validation_msg' => $validation_success_or_msg,
-				]);
-
-				$order_id  = esc_attr( $response->getOrderID() );
-				$order     = new WC_Order( $order_id );
-				$order_return_url = $this->get_return_url( $order );
-				// WordPress redirect.
-				wp_redirect( $order_return_url );
-				// JavaScript redirect.
-				echo "<script>window.location='$order_return_url'</script>";
-				exit();
-			}
-
-			if ( true !== $validation_success_or_msg ) {
-				// Oops. Something went wrong.
-				$redirect_url = isset( $_POST['Extra2'] ) ? $_POST['Extra2'] : $url_for_redirect;
-
-				$this->log( 'Something went wrong! Redirecting to order cancelled.' );
-				$this->log( $validation_success_or_msg );
-
-				// Validation failed because the order has been completed.
-				// But if this is a pending request, just redirect to the order page.
-				$is_pending = $response->isPending();
-				if ( $is_pending ) {
-					$order_id     = $response->getOrderID();
-					$order        = new WC_Order( $order_id );
-					$redirect_url = $this->get_return_url( $order );
-				}
-
-				/*
-				Should order status be changed?
-				if ( self::PN_ERROR_ORDER_ALREADY_HANDLED !== $validation_success_or_msg ) {
-				$order->update_status( self::ORDER_STATUS_FAILED, $validation_success_or_msg );
-				}
-				*/
-
-				if ( $redirect_url ) {
-					wp_redirect( $redirect_url );
-				}
-			}
+		if($response->wasAccepted()) {
+			// Just redirect to success. The IPN request will trigger the payment success and order status changes
+			$redirect_url = $this->get_return_url( $order );
 		} else {
-
-			// Probably calling the "redirect" URL.
-			$this->log( 'handle_return_url Probably calling the "redirect" URL' );
-
-			if ( $url_for_redirect ) {
-				header( "Location: {$url_for_redirect}" );
+			// Oops. Something went wrong.
+			if ($response->wasCancelled()) {
+				$redirect_url = html_entity_decode( $order->get_cancel_order_url() );
 			} else {
-				die( "No 'redirect' URL set." );
+				$redirect_url = isset( $_POST['Extra2'] ) ? $_POST['Extra2'] : '';
+			}
+
+			// Validation failed because the order has been completed.
+			// But if this is a pending request, just redirect to the order page.
+			if ( $response->isPending() ) {
+				$redirect_url = $this->get_return_url( $order );
 			}
 		}
+
+		if (!$redirect_url) {
+			// Probably calling the "redirect" URL.
+			$this->log( 'handle_return_url Probably calling the "redirect" URL' );
+			$redirect_url  = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
+			$redirect_url .= '/my-account/';
+		}
+
+		$this->log( 'handle_return_url Redirecting to '.$redirect_url );
+
+		// WordPress redirect.
+		wp_redirect( $redirect_url );
+		// JavaScript redirect.
+		echo "<script>window.location='$redirect_url'</script>";
+		exit();
+
 	}
 
 	/**
