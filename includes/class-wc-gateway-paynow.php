@@ -95,8 +95,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 			// Not adding this flag can cause subscriptions to be incorrectly suspended when the gateway’s schedule
 			// does not precede the WooCommerce schedule.
-			'gateway_scheduled_payments', // The gateway handles schedule.
-
+			'gateway_scheduled_payments', // The gateway handles schedule.,
+			'subscription_payment_method_change', // gateway is presented as a payment option when the customer is changing the payment;
+			'subscription_payment_method_change_admin',
+			'subscription_payment_method_change_customer',
 			// Note: If we can support token based billing without 3D-secure we can rely on Subscriptions’ scheduled payment
 			// hooks to charge each recurring payment, we can then support all of the available features.
 
@@ -111,19 +113,33 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// 'multiple_subscriptions',
 		);
 
+		// For WooCommerce Subscriptions
+		// to update the payment method when a customer is making a payment in lieu of an automatic renewal payment that
+		// previously failed.
+		add_action(
+			'woocommerce_subscription_failing_payment_method_updated_' . $this->id,
+			array(
+				$this,
+				'update_failing_payment_method',
+				10,
+				2
+			)
+		);
+		add_action(
+				'woocommerce_scheduled_subscription_payment_' . $this->id,
+				array(
+						$this,
+						'handle_scheduled_subscription_payment',
+						10,
+						2
+				)
+		);
+
 		add_action(
 			'woocommerce_subscription_before_actions',
 			array(
 				$this,
 				'show_paynow_subscription_management_notice',
-			)
-		);
-
-		add_action(
-			'paynow_request_validated',
-			array(
-				$this,
-				'successful_request',
 			)
 		);
 
@@ -698,10 +714,11 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 				if ( is_woocommerce_subscriptions_active() ) {
 					// A subscription’s status does not change when a payment fails. However, you should still record failed payments.
-					$subscriptions_in_order = WC_Subscriptions_Order::get_recurring_items( $order );
-					$subscription_item      = array_pop( $subscriptions_in_order );
-					$subscription_key       = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item['id'] );
-					WC_Subscriptions_Manager::process_subscription_payment_failure( $order->customer_user, $subscription_key );
+//					$subscriptions_in_order = WC_Subscriptions_Order::get_recurring_items( $order );
+//					$subscription_item      = array_pop( $subscriptions_in_order );
+//					$subscription_key       = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item['id'] );
+//					WC_Subscriptions_Manager::process_subscription_payment_failure( $order->customer_user, $subscription_key );
+					WC_Subscriptions_Manager::process_subscription_payment_failure_on_order( $order );
 				}
 
 				if ( $response->wasDeclined() ) {
@@ -731,13 +748,28 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 					if ( WC_Subscriptions_Order::order_contains_subscription( $order ) ) {
 						$is_subscription_payment = true;
 
-						$subscriptions_in_order = WC_Subscriptions_Order::get_recurring_items( $order );
-						$subscription_item      = array_pop( $subscriptions_in_order );
-						$subscription_key       = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item['id'] );
-						$subscription           = WC_Subscriptions_Manager::get_subscription( $subscription_key, $order->customer_user );
+						$subscriptions_in_order = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) ); // WC_Subscriptions_Order::get_recurring_items( $order );
+
+						$subscription_item = end($subscriptions_in_order); // Get the last item
+						$last_subscription_id = key($subscriptions_in_order); // The last subscription item id
+
+						// $subscription_key     = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item->get_id() );
+						$last_subscription    = new WC_Subscription( $last_subscription_id );
+						$subscription_payment_count = $last_subscription->get_payment_count(); // WC_Subscriptions_Manager::get_subscriptions_completed_payment_count( $subscription_key );
+
 						// First payment on order, process payment & activate subscription
-						if(empty( $subscription['completed_payments'] )) {
+						if(!$subscription_payment_count) {
 							$first_subscription_payment = true;
+						} else {
+							// Check if there are renewal orders
+							// Create a renewal order if it doesn't yet exist.
+						    $last_subscription    = new WC_Subscription( $last_subscription_id );
+						    $renewal_order = wcs_create_renewal_order ( $last_subscription );
+							if (is_wp_error($renewal_order)) {
+								$this->log( "\t Failed to created a renewal order for subscription: {$subscription_item->get_id()}. Message: {$renewal_order->get_error_message()}" );
+							} else {
+								$this->log( "\t Created a renewal order for subscription: {$subscription_item->get_id()}." );
+							}
 						}
 					}
 				}
@@ -1096,6 +1128,33 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				}
 			);
 		}
+
+	}
+
+
+	/**
+	 * Scheduled_subscription_payment function.
+	 *
+	 * @param $amount_to_charge float The amount to charge.
+	 * @param $renewal_order WC_Order A WC_Order object created to record the renewal payment.
+	 */
+	public function handle_scheduled_subscription_payment( $amount_to_charge, $renewal_order ) {
+		$this->log( "[handle_scheduled_subscription_payment] Called for renewal order {$renewal_order->get_id()} with amount {$amount_to_charge}" );
+	}
+
+	/**
+	 * Called by action to update the payment method when a customer is making a payment in lieu of an automatic renewal payment that previously failed
+	 * @param WC_Order $original_order
+	 * @param WC_Order $renewal_order
+	 */
+	public static function update_failing_payment_method( $original_order, $new_renewal_order ) {
+
+		// You do not need to update the the payment method or anything else on the original order, Subscriptions will
+		// handle that, simply make sure the original order has whatever meta data is required to correctly handle future
+		// payments and manage the subscription.
+
+		update_post_meta( $original_order->get_id(), '_update_failing_payment_method_called', 1 );
+		update_post_meta( $original_order->get_id(), '_your_gateway_customer_token_id', get_post_meta( $new_renewal_order->get_id(), '_your_gateway_customer_token_id', true ) );
 
 	}
 }
