@@ -27,6 +27,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public $version = '4.0.0';
 
+	public $id = 'paynow';
+
 	const ORDER_STATUS_COMPLETED  = 'completed';
 	const ORDER_STATUS_ON_HOLD    = 'on-hold';
 	const ORDER_STATUS_PROCESSING = 'processing';
@@ -58,9 +60,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$this->soap_installed = true;
 		}
 
+		$this->id = 'paynow';
 		// $this->notify_url = str_replace( 'https:', 'http:', add_query_arg( 'wc-api', 'WC_Gateway_PayNow', home_url( '/' ) ) );
-
-		$this->id                 = 'paynow';
 		$this->method_title       = __( 'Pay Now', 'woothemes' );
 		$this->method_description = __( 'A payment gateway for South African payment system, Netcash Pay Now.', 'woothemes' );
 		$this->icon               = $this->plugin_url() . '/assets/images/netcash.png';
@@ -97,14 +98,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// does not precede the WooCommerce schedule.
 			'gateway_scheduled_payments', // The gateway handles schedule.,
 			'subscription_payment_method_change', // gateway is presented as a payment option when the customer is changing the payment;
-			'subscription_payment_method_change_admin',
-			'subscription_payment_method_change_customer',
+			// 'subscription_payment_method_change_admin',
+			// 'subscription_payment_method_change_customer',
 			// Note: If we can support token based billing without 3D-secure we can rely on Subscriptions’ scheduled payment
 			// hooks to charge each recurring payment, we can then support all of the available features.
 
+			// Required to put 'on-hold'
+			'subscription_suspension',
+			'subscription_reactivation',
 			// 'subscription_cancellation',
-			// 'subscription_suspension',
-			// 'subscription_reactivation',
 			// 'subscription_amount_changes',
 			// 'subscription_date_changes',
 			// 'subscription_payment_method_change',
@@ -651,8 +653,22 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$order     = new WC_Order( $order_id );
 		$order_key = esc_attr( $response->getExtra( 3 ) );
 
-		$validated_response = $paynow->validateResponse( $_POST, $order->get_id(), floatval($order->get_total()) );
-		if ( false !== $validated_response ) {
+		// We're always going to get the _original_ order ID for our IPN requests.
+		$order_total = $order->get_total();
+
+		if ( WC_Subscriptions_Order::order_contains_subscription( $order ) ) {
+			// Check the _recurring_ amount (If there is a sign up fee it will differ)
+			$order_total = WC_Subscriptions_Order::get_recurring_total( $order );
+
+//			$subscriptions_in_order = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) ); // WC_Subscriptions_Order::get_recurring_items( $order );
+//
+//			$subscription_item    = end( $subscriptions_in_order ); // Get the last item
+//			$last_subscription_id = key( $subscriptions_in_order ); // The last subscription item id
+//			$last_subscription    = new WC_Subscription( $last_subscription_id );
+		}
+
+		$validated_response = $paynow->validateResponse( $_POST, $order->get_id(), $order_total );
+		if ( (false !== $validated_response) ) {
 			$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
 
 			$this->log( 'Valid Pay Now response', [
@@ -763,7 +779,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						$subscription_item = end($subscriptions_in_order); // Get the last item
 						$last_subscription_id = key($subscriptions_in_order); // The last subscription item id
 
-						// $subscription_key     = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item->get_id() );
+//						$subscription_key     = WC_Subscriptions_Manager::get_subscription_key( $order->get_id(), $subscription_item->get_id() );
+						$subscription_key     = WC_Subscriptions_Manager::get_subscription_key( $order->get_id() );
 						$last_subscription    = new WC_Subscription( $last_subscription_id );
 						$subscription_payment_count = $last_subscription->get_payment_count(); // WC_Subscriptions_Manager::get_subscriptions_completed_payment_count( $subscription_key );
 
@@ -773,8 +790,23 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						} else {
 							// Check if there are renewal orders
 							// Create a renewal order if it doesn't yet exist.
+							// see woocommerce-subscriptions/includes/class-wc-subscriptions-renewal-order.php:221
 						    $last_subscription    = new WC_Subscription( $last_subscription_id );
+
+						    // Put it on hold temporarily. It will be reactivated shortly
+							// when WC_Subscriptions_Manager::process_subscription_payments_on_order is called.
+							// If we don't put it on hold, the renewal date isn't updated and no "woocommerce_scheduled_subscription_payment" scheduled action is created
+							try {
+								$last_subscription->update_status('on-hold');
+							} catch (\Exception $e) {
+								// Skip
+								$this->log( "\t Failed to set subscription #{$last_subscription_id} to 'on-hold'." );
+							}
+
 						    $renewal_order = wcs_create_renewal_order ( $last_subscription );
+						    $renewal_order->set_payment_method( $this->id );
+							$renewal_order->save();
+
 							if (is_wp_error($renewal_order)) {
 								$this->log( "\t Failed to created a renewal order for subscription: {$subscription_item->get_id()}. Message: {$renewal_order->get_error_message()}" );
 							} else {
@@ -827,18 +859,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$reason = sprintf( __( 'Payment failure reason "%s".', 'woothemes' ), strtolower( $response->getReason() ) );
 				$order->update_status( self::ORDER_STATUS_ON_HOLD, $reason );
 
-				wp_redirect( $cancel_redirect_url );
-				echo "<script>window.location='$cancel_redirect_url'</script>";
-				exit();
+//				wp_redirect( $cancel_redirect_url );
+//				echo "<script>window.location='$cancel_redirect_url'</script>";
+//				exit();
 			}
 		}
 
-		$this->log( "Redirecting to $order_return_url" );
-		// WordPress redirect.
-		wp_redirect( $order_return_url );
-		// JavaScript redirect.
-		echo "<script>window.location='$order_return_url'</script>";
-		exit();
+//		$this->log( "Redirecting to $order_return_url" );
+//		// WordPress redirect.
+//		wp_redirect( $order_return_url );
+//		// JavaScript redirect.
+//		echo "<script>window.location='$order_return_url'</script>";
+//		exit();
 	}
 
 	/**
