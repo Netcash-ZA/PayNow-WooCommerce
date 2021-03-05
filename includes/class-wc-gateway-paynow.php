@@ -530,8 +530,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 					switch ( strtolower( $period ) ) {
 						case 'day':
-//							 $form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::DAILY );
-							throw new \Exception( "Unsupported Pay Now Frequency '{$period}'." );
+							 $form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::DAILY );
+//							throw new \Exception( "Unsupported Pay Now Frequency '{$period}'." );
 							break;
 						case 'week':
 							if ($subscription_interval === 2) {
@@ -657,14 +657,18 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$order_total = $order->get_total();
 
 		if ( WC_Subscriptions_Order::order_contains_subscription( $order ) ) {
-			// Check the _recurring_ amount (If there is a sign up fee it will differ)
-			$order_total = WC_Subscriptions_Order::get_recurring_total( $order );
+			$this->log( 'check_ipn_response - is subscription ');
+			$subscriptions_in_order = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) ); // WC_Subscriptions_Order::get_recurring_items( $order );
+			$last_subscription_id = key($subscriptions_in_order); // The last subscription item id
+			$last_subscription    = new WC_Subscription( $last_subscription_id );
+			$subscription_payment_count = $last_subscription->get_payment_count(); // WC_Subscriptions_Manager::get_subscriptions_completed_payment_count( $subscription_key );
 
-//			$subscriptions_in_order = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) ); // WC_Subscriptions_Order::get_recurring_items( $order );
-//
-//			$subscription_item    = end( $subscriptions_in_order ); // Get the last item
-//			$last_subscription_id = key( $subscriptions_in_order ); // The last subscription item id
-//			$last_subscription    = new WC_Subscription( $last_subscription_id );
+			if($subscription_payment_count > 0) {
+				// Subsequent payment
+				$this->log( 'check_ipn_response - is subsequent payment');
+				$order_total = WC_Subscriptions_Order::get_recurring_total( $order );
+			}
+
 		}
 
 		$validated_response = $paynow->validateResponse( $_POST, $order->get_id(), $order_total );
