@@ -1044,12 +1044,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$reason    = __( "Infinite subscription lengths are not supported for {$product_title}.", 'paynow' );
 		}
 
-		if ( $subscription_period === 'day' ) {
-			// Does not support day
-			$supported = false;
-			$reason    = __( "The period '{$subscription_period}' is an unsupported subscription period for '{$product_title}'.", 'paynow' );
-		}
-
 		if ($subscription_period === 'week' && $subscription_interval > 2) {
 			// Only supports every week or every 2 weeks
 			$supported = false;
