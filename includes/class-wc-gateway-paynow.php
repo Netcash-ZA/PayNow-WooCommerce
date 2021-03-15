@@ -964,6 +964,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		} else {
 			// Oops. Something went wrong.
 			if ($response->wasCancelled()) {
+				$order->update_status( 'cancelled', 'Cancelled by customer.' );
 				$redirect_url = html_entity_decode( $order->get_cancel_order_url() );
 			} else {
 				$redirect_url = isset( $_POST['Extra2'] ) ? $_POST['Extra2'] : '';
