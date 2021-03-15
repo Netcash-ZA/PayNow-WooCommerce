@@ -465,7 +465,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form = new \Netcash\PayNow\Form( $this->settings ['service_key'] );
 
 		$form->setField( 'm2', $netcash_guid );
-		$form->setField( 'm3', $netcash_guid );
 
 		$form->setOrderID( $order->get_id() );
 		$form->setDescription( "{$customer_name} ({$order->get_order_number()})" );
@@ -643,7 +642,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @return true|string True on success. An "PN_ERROR_" message on failure
 	 */
 	function check_ipn_response() {
-		// TODO: Success and IPN comes to same endpoint..
+
 		$this->log( 'check_ipn_response starting' );
 
 		$paynow   = new Netcash\PayNow\PayNow();
