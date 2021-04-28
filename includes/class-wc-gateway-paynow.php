@@ -27,7 +27,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public $version = '4.0.0';
 
-	public $id = 'paynow';
+	public static $id = 'paynow';
 
 	const ORDER_STATUS_COMPLETED  = 'completed';
 	const ORDER_STATUS_ON_HOLD    = 'on-hold';
@@ -901,10 +901,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @since 1.0.0
 	 */
-	function log( $message, $extra = [] ) {
-		if ( ( 'yes' !== $this->settings['send_debug_email'] && ! is_admin() ) ) {
-			return;
-		}
+	public static function log( $message, $extra = [] ) {
+//		if ( ( 'yes' !== $this->settings['send_debug_email'] && ! is_admin() ) ) {
+//			return;
+//		}
 
 		$date = date('Y-m-d');
 		$DIR = realpath(dirname(__FILE__) . "/../logs");
