@@ -632,6 +632,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function process_payment( $order_id ) {
 		$order = new WC_Order( $order_id );
 
+		if (is_woocommerce_subscriptions_active() && wcs_is_subscription($order_id)) {
+			// When your gateway’s process_payment() is called with the ID of a subscription, it means the request is to change the payment method on the subscription.
+		}
+
 		return array(
 			'result'   => 'success',
 			'redirect' => $order->get_checkout_payment_url( true ),
