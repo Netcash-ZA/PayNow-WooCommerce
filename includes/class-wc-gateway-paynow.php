@@ -128,6 +128,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			)
 		);
 		add_action(
+			'handle_subscription_renewal_payment_failed',
+			array(
+				$this,
+				'woocommerce_subscription_renewal_payment_failed',
+				10,
+				2
+			)
+		);
+		add_action(
 				'woocommerce_scheduled_subscription_payment_' . $this->id,
 				array(
 						$this,
@@ -796,6 +805,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 							// see woocommerce-subscriptions/includes/class-wc-subscriptions-renewal-order.php:221
 						    $last_subscription    = new WC_Subscription( $last_subscription_id );
 
+						    // Make sure the subscription is set back to auto-renewal again
+							// (Might have been set to manual because of failed payment.)
+							if($last_subscription && $last_subscription->get_requires_manual_renewal()) {
+								$this->log( "\t Set to manually renew. {$last_subscription_id}" );
+								$last_subscription->set_requires_manual_renewal( false );
+								$last_subscription->save();
+							}
+
 						    // Put it on hold temporarily. It will be reactivated shortly
 							// when WC_Subscriptions_Manager::process_subscription_payments_on_order is called.
 							// If we don't put it on hold, the renewal date isn't updated and no "woocommerce_scheduled_subscription_payment" scheduled action is created
@@ -1171,5 +1188,24 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		update_post_meta( $original_order->get_id(), '_update_failing_payment_method_called', 1 );
 		update_post_meta( $original_order->get_id(), '_your_gateway_customer_token_id', get_post_meta( $new_renewal_order->get_id(), '_your_gateway_customer_token_id', true ) );
 
+	}
+
+	/**
+	 * Triggered when a renewal payment fails for a subscription.
+	 *
+	 * @param WC_Subscription $subscription
+	 */
+	public static function handle_subscription_renewal_payment_failed( $subscription ) {
+		self::log( "[handle_subscription_renewal_payment_failed] Called for subscription {$subscription->get_id()} " );
+
+		// Netcash won't retry the payment if it failed
+		// The customer should manually pay. In order to show "Pay" button on renewal order on "Customer's View" the order
+		// must be set to manual renew
+		// https://docs.woocommerce.com/document/subscriptions/customers-view/
+		if($subscription->get_payment_method() === WC_Gateway_PayNow::$id) {
+			self::log( "\t Set to manually renew. {$subscription->get_id()}" );
+			$subscription->set_requires_manual_renewal( true );
+			$subscription->save();
+		}
 	}
 }
