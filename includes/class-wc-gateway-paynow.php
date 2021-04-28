@@ -139,11 +139,20 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		add_action(
 				'woocommerce_scheduled_subscription_payment_' . $this->id,
 				array(
-						$this,
-						'handle_scheduled_subscription_payment',
-						10,
-						2
-				)
+					$this,
+					'handle_scheduled_subscription_payment',
+				),
+				10,
+				2
+		);
+		add_action(
+				'updated_users_subscription',
+				array(
+					$this,
+					'handle_updated_users_subscription',
+				),
+				10,
+				2
 		);
 
 		add_action(
@@ -1172,6 +1181,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public function handle_scheduled_subscription_payment( $amount_to_charge, $renewal_order ) {
 		$this->log( "[handle_scheduled_subscription_payment] Called for renewal order {$renewal_order->get_id()} with amount {$amount_to_charge}" );
+	}
+
+	/**
+	 * Scheduled_subscription_payment function.
+	 *
+	 */
+	public function handle_updated_users_subscription( $subscription_key, $new_subscription_details ) {
+		$this->log( "[handle_updated_users_subscription] Called for subscription {$subscription_key} " );
+		$this->log( "- new_subscription_details " . print_r($new_subscription_details, true) );
 	}
 
 	/**
