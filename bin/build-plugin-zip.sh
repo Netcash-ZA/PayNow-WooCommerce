@@ -116,7 +116,7 @@ vendor_files=$(ls vendor/netcash/paynow-php/*.php vendor/netcash/paynow-php/src/
 status "Creating archive... 🎁"
 zip -r gateway-paynow.zip \
 	gateway-paynow.php \
-	paynow_callback.php \
+	notify-callback.php \
 	assets \
 	includes \
 	logs \
