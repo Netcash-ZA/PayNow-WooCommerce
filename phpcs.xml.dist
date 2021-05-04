@@ -41,4 +41,9 @@
         <exclude-pattern>gateway-paynow.php</exclude-pattern>
     </rule>
 
+    <!-- No need for ending comments with period. -->
+    <rule ref="Squiz.Commenting.InlineComment.InvalidEndChar">
+        <exclude-pattern>*.php</exclude-pattern>
+    </rule>
+
 </ruleset>
