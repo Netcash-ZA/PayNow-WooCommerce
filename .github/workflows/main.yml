@@ -1,0 +1,79 @@
+# This workflow will install composer dependencies and create a WordPress installer compatible ZIP file from the source.
+# It will include only necessary files and exclude unused ones.
+# Requires you to push a tag in order for the release to be created. E.g., "git push origin <tagname>"
+
+name: Create Release Zip
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ master ]
+    # Only run when tag is pushed
+    tags:
+      - 'v*.*.*'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+          # Number of commits to fetch. 0 indicates all history for all branches and tags.
+          # Default: 1
+          fetch-depth: 0
+
+      # See https://github.com/php-actions/example-composer for help
+      # SSH_KEY_FOR_NETCASH_PAYNOW_PHP & SSH_KEY_FOR_NETCASH_PAYNOW_PHP_PUBLIC added via Settings > Secrets
+      # Add the .pub key to the (pulled) repo's Deploy Keys. Settings > Deploy keys
+      - name: Install dependencies
+        uses: php-actions/composer@v4
+        with:
+          dev: no
+          composer_version: 2
+          args: --ignore-platform-reqs --no-scripts
+          php_version: 7.4
+          ssh_key: ${{ secrets.SSH_KEY_FOR_NETCASH_PAYNOW_PHP }}
+          ssh_key_pub: ${{ secrets.SSH_KEY_FOR_NETCASH_PAYNOW_PHP_PUBLIC }}
+
+      # Runs the ZIP command using the runners shell
+      - name: Zip the files
+        run: |
+          # Generate the plugin zip file "gateway-paynow.zip.
+          zip -r gateway-paynow.zip \
+            gateway-paynow.php \
+            notify-callback.php \
+            assets \
+            includes \
+            logs \
+            $(ls vendor/netcash/paynow-php/*.php vendor/netcash/paynow-php/src/*.php vendor/netcash/paynow-php/src/**/*.php) \
+            README.md
+
+      # Runs a single-line command using the runners shell
+      - name: Run a single-line script
+        run: echo Finished zipping release!
+
+      # Add the generated .zip to the release. See https://github.com/softprops/action-gh-release
+      # # https://docs.github.com/en/actions/reference/environment-variables
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        # the if statement checks the github.ref context to determine the current tag
+        # (filtering via fetch-depth)
+        # if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: gateway-paynow.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Runs a single-line command using the runners shell
+      - name: Run a single-line script
+        run: echo Finished creating release!
