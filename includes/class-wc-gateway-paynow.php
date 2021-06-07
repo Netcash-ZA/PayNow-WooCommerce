@@ -680,8 +680,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// We're always going to get the _original_ order ID for our IPN requests.
 		$order_total = $order->get_total();
+		$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
 
-		if ( WC_Subscriptions_Order::order_contains_subscription( $order ) ) {
+		if ( $is_subscription ) {
 			$this->log( 'check_ipn_response - is subscription ' );
 			$subscriptions_in_order     = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) ); // WC_Subscriptions_Order::get_recurring_items( $order );
 			$last_subscription_id       = key( $subscriptions_in_order ); // The last subscription item id
@@ -697,7 +698,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$validated_response = $paynow->validateResponse( $_POST, $order->get_id(), $order_total );
 		if ( ( false !== $validated_response ) ) {
-			$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
 
 			$this->log(
 				'Valid Pay Now response',
