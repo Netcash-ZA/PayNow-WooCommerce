@@ -673,12 +673,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @return true|string True on success. An "PN_ERROR_" message on failure
 	 */
 	function check_ipn_response() {
-
-		$this->log( 'check_ipn_response starting' );
+		$this->log( 'check_ipn_response called' );
 
 		$paynow   = new Netcash\PayNow\PayNow();
 		$response = new Netcash\PayNow\Response( $_POST );
-
 		$order_id  = esc_attr( $response->getOrderID() );
 		$order     = new WC_Order( $order_id );
 		$order_key = esc_attr( $response->getExtra( 3 ) );
@@ -686,6 +684,19 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// We're always going to get the _original_ order ID for our IPN requests.
 		$order_total = $order->get_total();
 		$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
+
+		$this->log(
+			'check_ipn_response',
+			array(
+				'response_order_id' => $response->getOrderID(),
+				'response_amount'   => $response->getAmount(),
+
+				'order_order_id' 	=> $order->get_id(),
+				'order_amount'		=> $order_total,
+
+				'is_subscription' 	=> $is_subscription ? 'Yes' : 'No'
+			)
+		);
 
 		if ( $is_subscription ) {
 			$this->log( 'check_ipn_response - is subscription ' );
@@ -701,32 +712,30 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			}
 		}
 
-		$validated_response = $paynow->validateResponse( $_POST, $order->get_id(), $order_total );
-		if ( ( false !== $validated_response ) ) {
+		if ( !$paynow->checkEqualAmounts($response->getAmount(), $order_total) ) {
+			$msg = 'Order and response amount mismatch';
+			$this->log( $msg );
+			return self::PN_ERROR_AMOUNT_MISMATCH;
+		}
 
-			$this->log(
-				'Valid Pay Now response',
-				array(
-					'is_subscription' => $is_subscription ? 'Yes' : 'No',
-				)
-			);
+		if ( strval($response->getOrderID()) !== strval($order->get_id()) ) {
+			$msg = 'Order and response ID mismatch';
+			$this->log( $msg );
+			return self::PN_ERROR_KEY_MISMATCH;
+		}
 
-			$completed_statusses = array( 'completed', 'processing' );
-			if ( ! $is_subscription && in_array( $order->get_status(), $completed_statusses, true ) ) {
-				$msg = 'Order has already been completed/processed. Current status: ' . $order->get_status();
-				$this->log( $msg );
-				return self::PN_ERROR_ORDER_ALREADY_HANDLED;
-			}
+		$completed_statusses = array( 'completed', 'processing' );
+		if ( ! $is_subscription && in_array( $order->get_status(), $completed_statusses, true ) ) {
+			$msg = 'Order has already been completed/processed. Current status: ' . $order->get_status();
+			$this->log( $msg );
+			return self::PN_ERROR_ORDER_ALREADY_HANDLED;
+		}
 
-			if ( $order->get_order_key() !== $order_key ) {
-				$this->log( 'Order key object: ' . $order->get_order_key() );
-				$this->log( 'Order key variable: ' . $order_key );
-				$this->log( 'order->order_key != order_key so exiting' );
-				return self::PN_ERROR_KEY_MISMATCH;
-			}
-		} else {
-			$this->log( 'System failed checking ipn_request_valid' );
-			return self::PN_ERROR_GENERAL_ERROR;
+		if ( $order->get_order_key() !== $order_key ) {
+			$this->log( 'Order key object: ' . $order->get_order_key() );
+			$this->log( 'Order key variable: ' . $order_key );
+			$this->log( 'order->order_key != order_key so exiting' );
+			return self::PN_ERROR_KEY_MISMATCH;
 		}
 
 		return true;
