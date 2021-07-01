@@ -992,6 +992,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		);
 
 		$redirect_url = '';
+		$notice = null;
 
 		$order_id = esc_attr( $response->getOrderID() );
 		$order    = new WC_Order( $order_id );
@@ -1004,8 +1005,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			if ( $response->wasCancelled() ) {
 				$order->update_status( 'cancelled', 'Cancelled by customer.' );
 				$redirect_url = html_entity_decode( $order->get_cancel_order_url() );
+				$notice = [ "Your transaction has been cancelled.", 'notice' ];
 			} else {
 				$redirect_url = isset( $_POST['Extra2'] ) ? $_POST['Extra2'] : '';
+			}
+
+			if($response->wasDeclined()) {
+				$reason = $response->getReason();
+				$notice = [ "Your transaction was unsuccessful. Reason: {$reason}", 'error' ];
 			}
 
 			// Validation failed because the order has been completed.
@@ -1020,6 +1027,16 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$this->log( 'handle_return_url Probably calling the "redirect" URL' );
 			$redirect_url  = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
 			$redirect_url .= '/my-account/';
+		}
+
+		// Append any notices to redirect URL which we'll show after the redirect
+		if($notice) {
+			$has_query = parse_url($redirect_url, PHP_URL_QUERY);
+			$notice_query = http_build_query([
+				'pnotice'=>urlencode($notice[0]),
+				'ptype'=>$notice[1]
+			]);
+			$redirect_url .= ($has_query ? '&' : '?') . $notice_query;
 		}
 
 		$this->log( 'handle_return_url Redirecting to ' . $redirect_url );

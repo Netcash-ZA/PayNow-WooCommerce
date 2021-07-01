@@ -66,6 +66,18 @@ function woocommerce_paynow_init() {
 		array( 'WC_Gateway_PayNow', 'admin_show_unsupported_message' )
 	);
 
+	// Show payment errors after redirect.
+	add_action(
+		'init',
+		function() {
+			$notice = isset($_GET['pnotice']) ? trim($_GET['pnotice']) : null;
+			if($notice) {
+				$type = isset($_GET['ptype']) ? trim($_GET['ptype']) : 'notice';
+				wc_add_notice(urldecode($notice), $type);
+			}
+		}
+	);
+
 }
 
 /**
