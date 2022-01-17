@@ -491,6 +491,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form->setOrderID( $order->get_id() );
 		$form->setDescription( "{$customer_name} ({$order->get_order_number()})" );
 		$form->setAmount( $order->get_total() );
+			
+		// Show Budget period dropdown on gateway
+		$form->setBudget( true );
 
 		try {
 			$form->setCellphone( $order->get_billing_phone() );
