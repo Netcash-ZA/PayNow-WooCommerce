@@ -25,7 +25,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.5';
+	public $version = '4.0.6';
 
 	/**
 	 * The gateway name / id.
@@ -387,9 +387,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'default' => 'no',
 			),
 			'send_debug_email'   => array(
-				'title'   => __( 'Enable Debug', 'woothemes' ),
+				'title'   => __( 'Enable Debug Log', 'woothemes' ),
 				'type'    => 'checkbox',
-				'label'   => __( 'Send debug e-mails for transactions and creates a log file in WooCommerce log folder called netcashnow.log', 'woothemes' ),
+				'label'   => __( 'Creates a log file in the Pay Now plugin\'s log folder.', 'woothemes' ),
 				'default' => 'yes',
 			),
 			'debug_email'        => array(
@@ -927,6 +927,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @since 1.0.0
 	 */
 	public static function log( $message, $extra = array() ) {
+
+		$PN = new WC_Gateway_PayNow();
+		$log_enabled = isset($PN->settings['send_debug_email']) ? $PN->settings['send_debug_email'] == 'yes' : false;
+		if(!$log_enabled) {
+			return;
+		}
+
 		$date = gmdate( 'Y-m-d' );
 		$dir  = realpath( dirname( __FILE__ ) . '/../logs' );
 		$file = $dir . "/general-{$date}.log";
@@ -998,7 +1005,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$notice = null;
 
 		$order_id = esc_attr( $response->getOrderID() );
-		$order    = new WC_Order( $order_id );
+
+		try {
+			$order    = new WC_Order( $order_id );
+		} catch(\Exception $e) {
+			$this->log('handle_return_url - Exception occurred.', [
+				'msg' => $e->getMessage()
+			]);
+		}
 
 		if ( $response->wasAccepted() ) {
 			// Just redirect to success. The IPN request will trigger the payment success and order status changes.
