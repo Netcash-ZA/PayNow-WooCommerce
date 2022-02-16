@@ -25,7 +25,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.6';
+	public $version = '4.0.7';
 
 	/**
 	 * The gateway name / id.
@@ -607,7 +607,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		// Output the HTML form.
 		$the_form = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
 
-		$this->log( 'Netcash Pay Now form post paynow_args_array: ' . print_r( $form->getFields(), true ) );
+		// Remove personal info
+		$debugFields = $form->getFields();
+		if($debugFields && isset($debugFields['m9'])) {
+			$debugFields['m9'] = '[value removed]';
+		}
+		if($debugFields && isset($debugFields['m11'])) {
+			$debugFields['m11'] = '[value removed]';
+		}
+		$this->log( 'Netcash Pay Now form post paynow_args_array: ' . print_r( $debugFields, true ) );
 
 		return $the_form . '<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
 				<script type="text/javascript">
