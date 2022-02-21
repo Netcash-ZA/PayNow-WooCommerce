@@ -1184,7 +1184,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				/* translators: %s is the message */
 				wc_add_notice( sprintf( __( 'Pay Now: %s', 'paynow' ), $supported_or_reason ), 'error' );
 			}
-			$this->log( 'Pay Now payment method removed from cart due to "' . $supported_or_reason . '"' );
 			return false;
 		}
 
