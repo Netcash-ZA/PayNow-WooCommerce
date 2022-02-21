@@ -25,7 +25,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.7';
+	public $version = '4.0.9';
 
 	/**
 	 * The gateway name / id.
@@ -467,8 +467,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 * @param int $order_id The WooCommerce Order ID.
 	 *
 	 * @return string
-	 * @throws ReflectionException|\Netcash\PayNow\Exceptions\ValidationException When validation fails.
-	 * @throws \Exception When exception occurs.
+	 * @throws ReflectionException|\Netcash\PayNow\Exceptions\ValidationException|\Exception When validation fails.
 	 * @since 1.0.0
 	 */
 	public function generate_paynow_form( $order_id ) {
@@ -491,13 +490,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$form->setOrderID( $order->get_id() );
 		$form->setDescription( "{$customer_name} ({$order->get_order_number()})" );
 		$form->setAmount( $order->get_total() );
-			
+
 		// Show Budget period dropdown on gateway
 		$form->setBudget( true );
 
 		try {
 			$form->setCellphone( $order->get_billing_phone() );
-		} catch(\Exception $e) {
+		} catch ( \Exception $e ) {
 			// invalid phone number
 		}
 
@@ -608,14 +607,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$the_form = $form->makeForm( true, __( 'Pay via Pay Now', 'woothemes' ) );
 
 		// Remove personal info
-		$debugFields = $form->getFields();
-		if($debugFields && isset($debugFields['m9'])) {
-			$debugFields['m9'] = '[value removed]';
+		$debug_fields = $form->getFields();
+		if ( $debug_fields && isset( $debug_fields['m9'] ) ) {
+			$debug_fields['m9'] = '[value removed]';
 		}
-		if($debugFields && isset($debugFields['m11'])) {
-			$debugFields['m11'] = '[value removed]';
+		if ( $debug_fields && isset( $debug_fields['m11'] ) ) {
+			$debug_fields['m11'] = '[value removed]';
 		}
-		$this->log( 'Netcash Pay Now form post paynow_args_array: ' . print_r( $debugFields, true ) );
+		$this->log( 'Netcash Pay Now form post paynow_args_array: ' . print_r( $debug_fields, true ) );
 
 		return $the_form . '<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
 				<script type="text/javascript">
@@ -686,14 +685,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	function check_ipn_response() {
 		$this->log( 'check_ipn_response called' );
 
-		$paynow   = new Netcash\PayNow\PayNow();
-		$response = new Netcash\PayNow\Response( $_POST );
+		$paynow    = new Netcash\PayNow\PayNow();
+		$response  = new Netcash\PayNow\Response( $_POST );
 		$order_id  = esc_attr( $response->getOrderID() );
 		$order     = new WC_Order( $order_id );
 		$order_key = esc_attr( $response->getExtra( 3 ) );
 
 		// We're always going to get the _original_ order ID for our IPN requests.
-		$order_total = $order->get_total();
+		$order_total     = $order->get_total();
 		$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
 
 		$this->log(
@@ -702,10 +701,10 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				'response_order_id' => $response->getOrderID(),
 				'response_amount'   => $response->getAmount(),
 
-				'order_order_id' 	=> $order->get_id(),
-				'order_amount'		=> $order_total,
+				'order_order_id'    => $order->get_id(),
+				'order_amount'      => $order_total,
 
-				'is_subscription' 	=> $is_subscription ? 'Yes' : 'No'
+				'is_subscription'   => $is_subscription ? 'Yes' : 'No',
 			)
 		);
 
@@ -723,13 +722,13 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			}
 		}
 
-		if ( !$paynow->checkEqualAmounts($response->getAmount(), $order_total) ) {
+		if ( ! $paynow->checkEqualAmounts( $response->getAmount(), $order_total ) ) {
 			$msg = 'Order and response amount mismatch';
 			$this->log( $msg );
 			return self::PN_ERROR_AMOUNT_MISMATCH;
 		}
 
-		if ( strval($response->getOrderID()) !== strval($order->get_id()) ) {
+		if ( strval( $response->getOrderID() ) !== strval( $order->get_id() ) ) {
 			$msg = 'Order and response ID mismatch';
 			$this->log( $msg );
 			return self::PN_ERROR_KEY_MISMATCH;
@@ -936,9 +935,9 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public static function log( $message, $extra = array() ) {
 
-		$PN = new WC_Gateway_PayNow();
-		$log_enabled = isset($PN->settings['send_debug_email']) ? $PN->settings['send_debug_email'] == 'yes' : false;
-		if(!$log_enabled) {
+		$paynow      = new WC_Gateway_PayNow();
+		$log_enabled = isset( $paynow->settings['send_debug_email'] ) ? 'yes' === $paynow->settings['send_debug_email'] : false;
+		if ( ! $log_enabled ) {
 			return;
 		}
 
@@ -1010,16 +1009,19 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		);
 
 		$redirect_url = '';
-		$notice = null;
+		$notice       = null;
 
 		$order_id = esc_attr( $response->getOrderID() );
 
 		try {
-			$order    = new WC_Order( $order_id );
-		} catch(\Exception $e) {
-			$this->log('handle_return_url - Exception occurred.', [
-				'msg' => $e->getMessage()
-			]);
+			$order = new WC_Order( $order_id );
+		} catch ( \Exception $e ) {
+			$this->log(
+				'handle_return_url - Exception occurred.',
+				array(
+					'msg' => $e->getMessage(),
+				)
+			);
 		}
 
 		if ( $response->wasAccepted() ) {
@@ -1030,14 +1032,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			if ( $response->wasCancelled() ) {
 				$order->update_status( 'cancelled', 'Cancelled by customer.' );
 				$redirect_url = html_entity_decode( $order->get_cancel_order_url() );
-				$notice = [ "Your transaction has been cancelled.", 'notice' ];
+				$notice       = array( 'Your transaction has been cancelled.', 'notice' );
 			} else {
 				$redirect_url = isset( $_POST['Extra2'] ) ? $_POST['Extra2'] : '';
 			}
 
-			if($response->wasDeclined()) {
+			if ( $response->wasDeclined() ) {
 				$reason = $response->getReason();
-				$notice = [ "Your transaction was unsuccessful. Reason: {$reason}", 'error' ];
+				$notice = array( "Your transaction was unsuccessful. Reason: {$reason}", 'error' );
 			}
 
 			// Validation failed because the order has been completed.
@@ -1055,13 +1057,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		// Append any notices to redirect URL which we'll show after the redirect
-		if($notice) {
-			$has_query = parse_url($redirect_url, PHP_URL_QUERY);
-			$notice_query = http_build_query([
-				'pnotice'=>urlencode($notice[0]),
-				'ptype'=>$notice[1]
-			]);
-			$redirect_url .= ($has_query ? '&' : '?') . $notice_query;
+		if ( $notice ) {
+			$has_query     = parse_url( $redirect_url, PHP_URL_QUERY );
+			$notice_query  = http_build_query(
+				array(
+					'pnotice' => urlencode( $notice[0] ),
+					'ptype'   => $notice[1],
+				)
+			);
+			$redirect_url .= ( $has_query ? '&' : '?' ) . $notice_query;
 		}
 
 		$this->log( 'handle_return_url Redirecting to ' . $redirect_url );
@@ -1123,7 +1127,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			// TODO: Set to 9999?.
 			$supported = false;
 			/* translators: %s is the product_title */
-			$reason = sprintf( __( 'Infinite subscription lengths are not supported for %s.', 'paynow' ), $product_title );
+			$reason = sprintf( __( 'Infinite subscription lengths are not supported for "%s".', 'paynow' ), $product_title );
 		}
 
 		if ( 'week' === $subscription_period && $subscription_interval > 2 ) {
@@ -1170,6 +1174,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			foreach ( WC()->cart->get_cart() as $item ) {
 				if ( isset( $item['product_id'] ) ) {
 					if ( WC_Subscriptions_Product::is_subscription( $item['product_id'] ) ) {
+						// Break after first unsupported item
 						$subscription_id = $item['product_id'];
 						break;
 					}
@@ -1192,20 +1197,14 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 	/**
 	 * Hook into the WordPress page display hook
-	 *
-	 * @param int    $post_id The post id.
-	 * @param object $post The post.
-	 * @param bool   $update ?.
 	 */
-	public static function admin_show_unsupported_message( $post_id = null, $post = null, $update = null ) {
+	public static function admin_show_unsupported_message() {
 		if ( ! is_woocommerce_subscriptions_active() ) {
 			// No need to run if subscriptions plugin isn't active.
 			return;
 		}
 
-		if ( ! $post_id ) {
-			$post_id = isset( $_GET['post'] ) ? (int) $_GET['post'] : null;
-		}
+		$post_id = isset( $_GET['post'] ) ? (int) $_GET['post'] : null;
 
 		if ( ! is_admin() ) {
 			return;

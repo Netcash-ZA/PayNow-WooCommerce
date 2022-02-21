@@ -5,34 +5,34 @@
   "description": "Accept payments via Netcash Pay Now for WooCommerce ",
   "homepage": "https://netcash.co.za/",
   "keywords": [
-	"netcash",
-	"woocommerce",
-	"payment",
-	"south africa"
+		"netcash",
+		"woocommerce",
+		"payment",
+		"south africa"
   ],
   "support": {
-	"issues": "https://netcash.co.za/"
+		"issues": "https://netcash.co.za/"
   },
   "require-dev": {
-	"dealerdirect/phpcodesniffer-composer-installer": "^0.6",
-	"squizlabs/php_codesniffer": "^3.5",
-	"phpcompatibility/php-compatibility": "^9.3",
-	"wp-coding-standards/wpcs": "^2.2",
-	"sirbrillig/phpcs-variable-analysis": "^2.8",
-	"wp-phpunit/wp-phpunit": "^5.4"
+		"dealerdirect/phpcodesniffer-composer-installer": "^0.6",
+		"squizlabs/php_codesniffer": "^3.5",
+		"phpcompatibility/php-compatibility": "^9.3",
+		"wp-coding-standards/wpcs": "^2.2",
+		"sirbrillig/phpcs-variable-analysis": "^2.8",
+		"wp-phpunit/wp-phpunit": "^5.4"
   },
   "require": {
-	"composer/installers": "~1.0",
-	"netcash/paynow-php": "@dev"
+		"composer/installers": "~1.0",
+		"netcash/paynow-php": "@dev"
   },
   "scripts": {
-	"format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
-	"lint": "phpcs --standard=phpcs.xml.dist"
+		"format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
+		"lint": "phpcs --standard=phpcs.xml.dist"
   },
   "repositories": [
-	{
-	  "url": "https://github.com/iedev1/paynow-php",
-	  "type": "git"
-	}
+		{
+		  "url": "https://github.com/iedev1/paynow-php",
+		  "type": "git"
+		}
   ]
 }
