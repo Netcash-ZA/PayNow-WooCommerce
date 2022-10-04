@@ -511,7 +511,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// Subscription?.
 		if ( is_woocommerce_subscriptions_active() ) {
-			if ( WC_Subscriptions_Order::order_contains_subscription( $order_id ) ) {
+			if ( wcs_order_contains_subscription( $order ) ) {
 				$this->log( 'Order contains a subscription' );
 
 				$subscriptions      = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) );
@@ -693,7 +693,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		// We're always going to get the _original_ order ID for our IPN requests.
 		$order_total     = $order->get_total();
-		$is_subscription = is_woocommerce_subscriptions_active() ? WC_Subscriptions_Order::order_contains_subscription( $order->get_id() ) : false;
+		$is_subscription = is_woocommerce_subscriptions_active() ? wcs_order_contains_subscription( $order ) : false;
 
 		$this->log(
 			'check_ipn_response',
@@ -826,7 +826,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$first_subscription_payment = false;
 
 				if ( is_woocommerce_subscriptions_active() ) {
-					if ( WC_Subscriptions_Order::order_contains_subscription( $order ) ) {
+					if ( wcs_order_contains_subscription( $order ) ) {
 						$is_subscription_payment = true;
 
 						$subscriptions_in_order = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) ); // WC_Subscriptions_Order::get_recurring_items( $order );
