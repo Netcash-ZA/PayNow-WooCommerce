@@ -1170,13 +1170,15 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$subscription_id = null;
 
-		if ( WC()->cart ) {
-			foreach ( WC()->cart->get_cart() as $item ) {
-				if ( isset( $item['product_id'] ) ) {
-					if ( WC_Subscriptions_Product::is_subscription( $item['product_id'] ) ) {
-						// Break after first unsupported item
-						$subscription_id = $item['product_id'];
-						break;
+		if ( did_action( 'wp_loaded' ) ) { // make sure to run after loaded
+			if ( WC()->cart ) {
+				foreach ( WC()->cart->get_cart() as $item ) {
+					if ( isset( $item['product_id'] ) ) {
+						if ( WC_Subscriptions_Product::is_subscription( $item['product_id'] ) ) {
+							// Break after first unsupported item
+							$subscription_id = $item['product_id'];
+							break;
+						}
 					}
 				}
 			}
