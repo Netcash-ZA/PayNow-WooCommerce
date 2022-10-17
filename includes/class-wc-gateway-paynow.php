@@ -586,7 +586,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 
 					$form->setSubscriptionStartDate( $subscription_start );
 					$form->setSubscriptionAmount( $price_per_period );
-					$form->setSubscriptionCycle( $subscription_installments );
+					// Cannot be infinite. A max of 999 cyles can be set.
+					$form->setSubscriptionCycle( $infinite_installments ? 999 : $subscription_installments );
 
 					$subscription_data = array(
 						'amount_now'       => $form->getField( \Netcash\PayNow\Types\FieldType::AMOUNT ),
@@ -595,6 +596,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 						'recurring_amount' => $form->getField( \Netcash\PayNow\Types\FieldType::SUBSCRIPTION_RECURRING_AMOUNT ),
 						'frequency'        => $form->getField( \Netcash\PayNow\Types\FieldType::SUBSCRIPTION_FREQUENCY ),
 						'cycles'           => $form->getField( \Netcash\PayNow\Types\FieldType::SUBSCRIPTION_CYCLE ),
+						'instalments'      => $subscription_installments,
 					);
 
 					$this->log( 'Subscription set.' );
@@ -1122,13 +1124,6 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 		$product_title = get_the_title( $post_id );
 		$reason        = '';
 		$supported     = true;
-		if ( 0 === $subscription_length ) {
-			// Does not support infinite length.
-			// TODO: Set to 9999?.
-			$supported = false;
-			/* translators: %s is the product_title */
-			$reason = sprintf( __( 'Infinite subscription lengths are not supported for "%s".', 'paynow' ), $product_title );
-		}
 
 		if ( 'week' === $subscription_period && $subscription_interval > 2 ) {
 			// Only supports every week or every 2 weeks.
