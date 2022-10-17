@@ -39,7 +39,7 @@ jobs:
         with:
           dev: no
           composer_version: 2
-          args: --ignore-platform-reqs --no-scripts
+          args: --ignore-platform-reqs --no-scripts --no-cache
           php_version: 7.4
           ssh_key: ${{ secrets.SSH_KEY_FOR_NETCASH_PAYNOW_PHP }}
           ssh_key_pub: ${{ secrets.SSH_KEY_FOR_NETCASH_PAYNOW_PHP_PUBLIC }}
