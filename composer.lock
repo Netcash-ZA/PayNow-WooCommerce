@@ -149,7 +149,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/iedev1/paynow-php",
-                "reference": "c1413762c7969befb6cfbb368317f332ad064b8f"
+                "reference": "88c4c72734e64bcdcbee9843d57be9b0056c21a3"
             },
             "require": {
                 "ext-soap": "*",
@@ -159,6 +159,7 @@
                 "phpunit/phpunit": "^8",
                 "squizlabs/php_codesniffer": "^3"
             },
+            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -200,7 +201,7 @@
                 "paynow",
                 "south africa"
             ],
-            "time": "2020-12-09T08:00:07+00:00"
+            "time": "2021-06-22T08:06:35+00:00"
         }
     ],
     "packages-dev": [
@@ -526,5 +527,5 @@
     "prefer-lowest": false,
     "platform": [],
     "platform-dev": [],
-    "plugin-api-version": "1.1.0"
+    "plugin-api-version": "2.1.0"
 }

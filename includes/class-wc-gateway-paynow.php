@@ -25,7 +25,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.9';
+	public $version = '4.0.12';
 
 	/**
 	 * The gateway name / id.
