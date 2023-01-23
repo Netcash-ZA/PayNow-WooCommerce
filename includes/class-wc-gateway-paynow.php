@@ -25,7 +25,7 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.12';
+	public $version = '4.0.13';
 
 	/**
 	 * The gateway name / id.
@@ -319,7 +319,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 				$result = $validator->validatePaynowServiceKey( $account_number, $service_key );
 
 				if ( true !== $result ) {
-					$this->add_error( $result[ $service_key ] ? $result[ $service_key ] : "<strong>Service Key</strong> {$result}" );
+					$key_error = !is_array($result) ? "<strong>Service Key</strong> {$result}" : $result[ $service_key ];
+					$this->add_error( $key_error );
 				}
 			} catch ( \Exception $e ) {
 				$this->add_error( $e->getMessage() );
