@@ -1133,8 +1133,8 @@ class WC_Gateway_PayNow extends WC_Payment_Gateway {
 			$reason = sprintf( __( "Every '%1\$d' weeks is an unsupported subscription cycle for '%2\$s'.", 'paynow' ), $subscription_interval, $product_title );
 		}
 
-		if ( 'month' === $subscription_period && ! in_array( $subscription_interval, array( 1, 4, 6 ), true ) ) {
-			// Only supports every month, every 4 months (quarterly), or every 6 months.
+		if ( 'month' === $subscription_period && ! in_array( $subscription_interval, array( 1, 3, 6 ), true ) ) {
+			// Only supports every month, every 3 months (quarterly), or every 6 months.
 			$supported = false;
 			/* translators: %d is the subscription_interval, %s is the product_title */
 			$reason = sprintf( __( "Every '%1\$d' months is an unsupported subscription cycle for '%2\$s'.", 'paynow' ), $subscription_interval, $product_title );
