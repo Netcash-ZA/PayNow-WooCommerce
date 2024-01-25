@@ -14,12 +14,12 @@
 		"issues": "https://netcash.co.za/"
   },
   "require-dev": {
-		"dealerdirect/phpcodesniffer-composer-installer": "^0.6",
 		"squizlabs/php_codesniffer": "^3.5",
 		"phpcompatibility/php-compatibility": "^9.3",
-		"wp-coding-standards/wpcs": "^2.2",
 		"sirbrillig/phpcs-variable-analysis": "^2.8",
-		"wp-phpunit/wp-phpunit": "^5.4"
+		"wp-phpunit/wp-phpunit": "^5.4",
+    "wp-coding-standards/wpcs": "^3.0",
+    "woocommerce/woocommerce-sniffs": "^1.0"
   },
   "require": {
 		"composer/installers": "~1.0",
@@ -27,12 +27,20 @@
   },
   "scripts": {
 		"format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
-		"lint": "phpcs --standard=phpcs.xml.dist"
+		"lint": "phpcs --standard=phpcs.xml.dist",
+		"lint-wc": "phpcs --standard=/srv/phpcs-rulesets/full.xml --warning-severity=0 --report-source --report-xml=/phpcs-report.xml --ignore-annotations --extensions=php,html",
+		"lint-wp": "phpcs -ps . --standard=WordPress -d memory_limit=720M --ignore-annotations --extensions=php,html"
   },
   "repositories": [
 		{
 		  "url": "https://github.com/iedev1/paynow-php",
 		  "type": "git"
 		}
-  ]
+  ],
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  }
 }

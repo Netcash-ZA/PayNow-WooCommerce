@@ -2,8 +2,7 @@
 /**
  * Load WooCommerce dependencies.
  *
- * @category   Payment Gateways
- * @package    WC_Gateway_PayNow
+ * @package    Netcash_WooCommerce_Gateway_PayNow
  * @since      1.0.0
  */
 
@@ -12,7 +11,7 @@
  *
  * Checks if WooCommerce is enabled
  */
-class WC_Dependencies {
+class Netcash_WC_Dependencies {
 
 	/**
 	 * The active plugins

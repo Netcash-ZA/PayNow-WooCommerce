@@ -114,7 +114,8 @@ vendor_files=$(ls vendor/netcash/paynow-php/*.php vendor/netcash/paynow-php/src/
 
 # Generate the plugin zip file.
 status "Creating archive... 🎁"
-zip -r gateway-paynow.zip \
+# Netcash Pay Now - Payment Gateway for WooCommerce
+zip -r netcash-pay-now-payment-gateway-for-woocommerce.zip \
 	gateway-paynow.php \
 	notify-callback.php \
 	assets \
