@@ -2,7 +2,7 @@
 # It will include only necessary files and exclude unused ones.
 # Requires you to push a tag in order for the release to be created. E.g., "git push origin <tagname>"
 
-name: Create Release Zip
+name: Main - Stable Release
 
 # Controls when the action will run.
 on:
@@ -25,7 +25,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           # Number of commits to fetch. 0 indicates all history for all branches and tags.
           # Default: 1
@@ -44,18 +44,33 @@ jobs:
           ssh_key: ${{ secrets.SSH_KEY_FOR_NETCASH_PAYNOW_PHP }}
           ssh_key_pub: ${{ secrets.SSH_KEY_FOR_NETCASH_PAYNOW_PHP_PUBLIC }}
 
+      # Copy to /release directory
+      - name: Copy to release dir
+        run: |
+          echo "Make release directories"
+          mkdir -p release/vendor/netcash/paynow-php
+
+          echo "Copy gateway files"
+          cp gateway-paynow.php release/gateway-paynow.php
+          cp readme.txt release/readme.txt
+          cp -r assets release/assets
+          cp -r includes release/includes
+          cp -r logs release/logs
+          cp -r vendor/netcash/paynow-php release/vendor/netcash
+
+          echo "Copy vendor files"
+          rsync -rmva "vendor/netcash/paynow-php/" "release/vendor/netcash/paynow-php" \
+            --include '*/' \
+            --include 'composer.json' \
+            --include 'AutoLoader.php' \
+            --include 'src/**.php' \
+            --exclude '*'
+
       # Runs the ZIP command using the runners shell
       - name: Zip the files
         run: |
           # Generate the plugin zip file "gateway-paynow.zip.
-          zip -r gateway-paynow.zip \
-            gateway-paynow.php \
-            notify-callback.php \
-            assets \
-            includes \
-            logs \
-            $(ls vendor/netcash/paynow-php/*.php vendor/netcash/paynow-php/src/*.php vendor/netcash/paynow-php/src/**/*.php) \
-            README.md
+          zip -r gateway-paynow.zip $(ls release) \
 
       # Runs a single-line command using the runners shell
       - name: Run a single-line script
@@ -76,3 +91,17 @@ jobs:
       # Runs a single-line command using the runners shell
       - name: Run a single-line script
         run: echo Finished creating release!
+
+      - name: WordPress Plugin Deploy
+        uses: 10up/action-wordpress-plugin-deploy@master
+        env:
+          #TODO dry run is not working
+          INPUT_DRY_RUN: false
+          INPUT_GENERATE_ZIP: false
+          # SVN URL: https://plugins.svn.wordpress.org/netcash-pay-now-payment-gateway-for-woocommerce
+          # WP Plugin URL: https://wordpress.org/plugins/netcash-pay-now-payment-gateway-for-woocommerce
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SLUG: netcash-pay-now-payment-gateway-for-woocommerce
+          ASSETS_DIR: 'release/assets'
+          BUILD_DIR: 'release'

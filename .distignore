@@ -1,0 +1,39 @@
+# A set of files you probably don't want in your WordPress.org distribution
+.distignore
+.editorconfig
+.git
+.github
+.gitignore
+.gitlab-ci.yml
+.travis.yml
+.DS_Store
+Thumbs.db
+behat.yml
+bin
+circle.yml
+composer.json
+composer.lock
+Gruntfile.js
+package.json
+phpunit.xml
+phpunit.xml.dist
+multisite.xml
+multisite.xml.dist
+phpcs.ruleset.xml
+README.md
+wp-cli.local.yml
+tests
+# We can't exclude vendor because netcash/paynow-php is needed from there
+#vendor
+node_modules
+*.sql
+*.tar.gz
+*.zip
+
+.idea
+.vscode
+sftp-config.json
+phpunit.xml.dist
+phpcs.xml.dist
+# Skip the tmp/generated /release folder
+release
