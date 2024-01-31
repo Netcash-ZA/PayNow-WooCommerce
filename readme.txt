@@ -3,7 +3,7 @@ Contributors: @netcashpaynow
 Tags: woocommerce, payment, gateway, south-africa, netcash
 Requires at least: 4.7
 Tested up to: 6.3
-Stable tag: 4.0.15
+Stable tag: 4.0.16
 Requires PHP: 7.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -12,12 +12,27 @@ This is the Netcash Pay Now plugin for WooCommerce giving you the ability to acc
 
 == Description ==
 
-A payment gateway for Netcash Pay Now. A Netcash Pay Now merchant account and service key are required for this gateway to function.
+Let your customers ‘Pay Now’ any way they want to, with the Netcash Payment Gateway. Seamlessly integrate Pay Now with WooCommerce and business software suites to make payments simpler, safer, and faster than ever. Take a tour with our [checkout demo](https://netcash.co.za/demos/checkout.html).
 
-**Note:** An SSL certificate is recommended for additional safety and security for your customers.
+- Easy setup and installation
+- Custom integration supported via API
+- Friendly customer service with a dedicated account manager
+- Choose when to get paid out and receive your funds in 24 hours.
+- 3D Secure and PCI DSS Level 1 Compliant
 
-This plugin integrates your WooCommerce store with Netcash Pay Now and will send your users to our website (https://paynow.netcash.co.za/site/paynow.aspx) in order for use to capture the payment.
-After the payment the user will be redirected back to your store.
+Need to sign up as a Netcash merchant? [Register now.](https://netcash.co.za/apply-for-your-netcash-account/?utm_medium=affiliate&utm_source=listing&utm_campaign=woocommerce_plugin)
+
+### Why Choose Netcash?
+
+**Multiple payment methods:** Accept payment via all major credit and debit cards, QR and digital wallets, bank EFT, Instant EFT, Payflex, retail payments, and more. We give you everything in one, no need for multiple sign ups and fees.
+
+**Streamlined checkout experience:** Ensure quick and hassle-free transactions, reduce cart abandonment rates and boost sales on desktop and mobile.
+
+**Payment requests:** Send a payment link to anyone, anywhere - no code required. Share a request via email, SMS, QR code or WhatsApp to get paid instantly and securely.
+
+**Invoicing:** Get paid faster, with less admin. Easily connect Pay Now to your existing payroll or accounting software, and offer customers multiple ways to pay at a click, with every invoice you send.
+
+**Subscriptions:** Earn recurring revenue for your business with Woo Subscriptions or use our custom API integration.
 
 ### Prerequisites:
 
@@ -35,15 +50,15 @@ You will need:
 
 1. Log into your [Netcash account](https://merchant.netcash.co.za/SiteLogin.aspx)
 2. Type in your Username, Password, and PIN
-3. Click on ACCOUNT PROFILE on the top menu
-4. Select NETCONNECTOR from the left side menu
-5. Click on PAY NOW from the subsection
-6. ACTIVATE the Pay Now service
-7. Type in your EMAIL address
+3. Click on **Account Profile** on the top menu
+4. Select **Netconnector** from the left side menu
+5. Click on **Pay Now** from the subsection
+6. **Activate** the Pay Now service
+7. Type in your email address
 8. It is highly advisable to activate test mode & ignore errors while testing
-9. Select the PAYMENT OPTIONS required (only the options selected will be displayed to the end user)
+9. Select the payment options required (only the options selected will be displayed to the end user)
 10. Remember to remove the "Make Test Mode Active" indicator to accept live payments
-11. Click SAVE and COPY your Pay Now Service Key
+11. Click "Save" and copy your Pay Now Service Key
 
 ### Netcash Pay Now Callback
 
@@ -58,8 +73,6 @@ Use the following URLs for the callbacks.
 > https://your_domain_name.co.za/SUBDIRECTORY_NAME/wp-content/plugins/gateway-paynow/notify-callback.php
 
 **Important:** Please make sure you use the correct URL for the redirects.
-
-> For immediate assistance contact Netcash on 0861 338 338
 
 ### WordPress and WooCommerce Installation
 
@@ -85,9 +98,25 @@ In order to use WooCommerce you need to have a working installation of WordPress
 
 == Frequently Asked Questions ==
 
-= Do I need a Netcash account? =
+= Does this require a Netcash merchant account? =
 
-Yes. A Netcash Pay Now merchant account and service key are required for this gateway to function.
+Yes, you can register for a new account [here](https://netcash.co.za/apply-for-your-netcash-account/?utm_medium=affiliate&utm_source=listing&utm_campaign=woocommerce_plugin) or use your existing Netcash account to login and activate the service.
+
+= I need support with this plugin. Who can I contact? =
+
+You can reach out to [support@netcash.co.za](mailto:support@netcash.co.za) with any queries.
+
+= Can I accept foreign currency through Pay Now? =
+
+Unfortunately, all transactions are processed in ZAR. You can however accept foreign credit and debit cards, as long as they are 3D secured.
+
+= What are the transaction fees? =
+
+To receive our latest fees, please email [sales@netcash.co.za](mailto:sales@netcash.co.za).
+
+= Does Netcash support custom integration? =
+
+Yes, you can use our developer-friendly API to create custom integrations for your online store. Please contact [support@netcash.co.za](mailto:support@netcash.co.za) for assistance and documentation.
 
 = Can I use recurring payments?? =
 
@@ -106,6 +135,10 @@ If debugging is enabled we will log to the default PHP error log. Please ask you
 1. Screenshot of Pay Now settings inside WooCommerce
 
 == Changelog ==
+
+= 4.0.16 =
+
+* Update FAQs
 
 = 4.0.15 =
 
