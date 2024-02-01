@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.16';
+	public $version = '4.0.17';
 
 	/**
 	 * The gateway name / id.
