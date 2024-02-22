@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.17';
+	public $version = '4.0.18';
 
 	/**
 	 * The gateway name / id.
@@ -665,7 +665,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 						default:
 							if ( 6 === $subscription_interval ) {
 								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::SIX_MONTHLY );
-							} elseif ( 4 === $subscription_interval ) {
+							} elseif ( 3 === $subscription_interval ) {
 								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::QUARTERLY );
 							} else {
 								$form->setSubscriptionFrequency( \Netcash\PayNow\Types\SubscriptionFrequency::MONTHLY );
