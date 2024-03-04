@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.18';
+	public $version = '4.0.19';
 
 	/**
 	 * The gateway name / id.
@@ -67,7 +67,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->method_description = __( 'A payment gateway for South African payment system, Netcash Pay Now.', 'woothemes' );
 		$this->icon               = $this->plugin_url() . '/assets/images/netcash.png';
 		$this->has_fields         = true;
-		$this->debug_email        = get_option( 'admin_email' );
+		// $this->debug_email        = get_option( 'admin_email' );
 
 		// Setup available countries.
 		$this->available_countries = array(
@@ -86,8 +86,8 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		$this->init_settings();
 
 		// Setup default merchant data.
-		$this->service_key = $this->settings ['service_key'];
-		$this->url         = 'https://paynow.netcash.co.za/site/paynow.aspx';
+		// $this->service_key = $this->settings ['service_key'];
+		// $this->url         = 'https://paynow.netcash.co.za/site/paynow.aspx';
 		$this->title       = $this->settings ['title'];
 
 		// Register support for subscriptions.
@@ -229,28 +229,6 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		// 	// Log 'em in so we can verify the nonce
 		// 	wp_set_current_user($user_id);
 		// }
-
-		$order_key = isset( $_POST['Extra3'] ) ? sanitize_text_field( wp_unslash( $_POST['Extra3'] ) ) : '';
-		$nonce_action = $order_key;
-		$nonce_value = isset( $_POST['Extra2'] ) ? sanitize_text_field( wp_unslash( $_POST['Extra2'] ) ) : '';
-		$nonce_verified = wp_verify_nonce( $nonce_value, $nonce_action );
-		self::log( '[OrderNonce] Verifying with action and value', print_r(
-			['user_id' => $user_id, 'action' => $nonce_action, 'value' => $nonce_value, 'verified' => $nonce_verified ], true) );
-		self::log( 'get_response called', print_r( [
-			// 'order_key' => $order_key,
-			'user_id' => $user_id,
-			'is_user_logged_in' => is_user_logged_in(),
-			'nonce_action' => $nonce_action,
-			'nonce_value' => $nonce_value,
-			'verify_nonce' => $nonce_verified,
-			// 'verify_nonce' => $nonce_verified ? $nonce_verified : 'FALSE',
-		], true ) );
-
-		if ( false === $nonce_verified ) {
-			// Failed to verify nonce, use cached value
-			// $post = WC()->session->get( 'pn_response_verified' );
-			return new Netcash\PayNow\Response( [] );
-		}
 
 		// Ignored because it's from a third party.
 		// WC()->session->set( 'pn_response_verified' , stripslashes_deep( $_POST ) );
@@ -473,11 +451,11 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public function plugin_url() {
 		if ( is_ssl() ) {
-			$this->plugin_url = str_replace( 'http://', 'https://', WP_PLUGIN_URL ) . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
+			$url = str_replace( 'http://', 'https://', WP_PLUGIN_URL ) . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
 		} else {
-			$this->plugin_url = WP_PLUGIN_URL . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
+			$url = WP_PLUGIN_URL . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
 		}
-		return $this->plugin_url;
+		return $url;
 	}
 
 	/**
@@ -887,7 +865,10 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		$order = new WC_Order( $order_id );
 
 		if ( $order->get_status() === 'completed' ) {
-			throw new \Exception( 'order exists...' );
+			// Already processed. Skip.
+			$this->log( 'successful_request - order status already completed. Aborting...' );
+			return new Netcash\PayNow\Response( [] );
+			// throw new \Exception( 'order exists...' );
 		}
 
 		$this->log( '- current order status: ' . $order->get_status() );
