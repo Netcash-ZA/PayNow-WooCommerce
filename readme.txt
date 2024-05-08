@@ -3,7 +3,7 @@ Contributors: @netcashpaynow
 Tags: woocommerce, payment, gateway, south-africa, netcash
 Requires at least: 4.7
 Tested up to: 6.3
-Stable tag: 4.0.19
+Stable tag: 4.0.20
 Requires PHP: 7.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -12,7 +12,7 @@ This is the Netcash Pay Now plugin for WooCommerce giving you the ability to acc
 
 == Description ==
 
-Let your customers ‘Pay Now’ any way they want to, with the Netcash Payment Gateway. Seamlessly integrate Pay Now with WooCommerce and business software suites to make payments simpler, safer, and faster than ever. Take a tour with our [checkout demo](https://netcash.co.za/demos/checkout.html).
+Let your customers ‘Pay Now’ any way they want to, with the Netcash Payment Gateway. Seamlessly integrate Pay Now with WooCommerce and business software suites to make payments simpler, safer, and faster than ever. Take a tour with our [checkout demo](https://netcash.co.za/demos/checkout.html?utm_medium=affiliate&utm_source=listing&utm_campaign=woocommerce_plugin).
 
 - Easy setup and installation
 - Custom integration supported via API
@@ -38,7 +38,7 @@ Need to sign up as a Netcash merchant? [Register now.](https://netcash.co.za/app
 
 You will need:
 
-* A [Netcash](https://netcash.co.za/) account
+* A [Netcash](https://netcash.co.za/?utm_medium=affiliate&utm_source=listing&utm_campaign=woocommerce_plugin) account
 * Pay Now service activated
 * Netcash account login credentials (with the appropriate permissions setup)
 * Netcash - Pay Now Service key
@@ -48,7 +48,7 @@ You will need:
 
 ### Netcash Account Configuration Steps:
 
-1. Log into your [Netcash account](https://merchant.netcash.co.za/SiteLogin.aspx)
+1. Log into your [Netcash account](https://merchant.netcash.co.za/SiteLogin.aspx?utm_medium=affiliate&utm_source=listing&utm_campaign=woocommerce_plugin)
 2. Type in your Username, Password, and PIN
 3. Click on **Account Profile** on the top menu
 4. Select **Netconnector** from the left side menu
@@ -138,6 +138,12 @@ If debugging is enabled we will log to the default PHP error log. Please ask you
 4. Netcash Scan to Pay
 
 == Changelog ==
+
+= 4.0.20 =
+
+* Update readme links
+* Add ability for customer to cancel subscription from the frontend
+* Add ability to create subscriptions with a free trial and no signup fee.
 
 = 4.0.19 =
 

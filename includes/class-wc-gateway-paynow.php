@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.19';
+	public $version = '4.0.20';
 
 	/**
 	 * The gateway name / id.
@@ -98,13 +98,23 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			// Not adding this flag can cause subscriptions to be incorrectly suspended when the gateway’s schedule does not precede the WooCommerce schedule.
 			'gateway_scheduled_payments', // The gateway handles schedule.,
 			'subscription_payment_method_change', // gateway is presented as a payment option when the customer is changing the payment;
-			// 'subscription_payment_method_change_admin',
-			// 'subscription_payment_method_change_customer',
+
 			// Note: If we can support token based billing without 3D-secure we can rely on Subscriptions’ scheduled payment hooks to charge each recurring payment, we can then support all of the available features.
 
 			// Required to put 'on-hold'
 			'subscription_suspension',
 			'subscription_reactivation',
+
+			// 'subscriptions',
+			'subscription_cancellation', // Shows cancel button and calls 'woocommerce_subscription_cancelled_PLUGIN_ID' hook
+			// 'subscription_suspension',
+			// 'subscription_reactivation',
+			// 'subscription_amount_changes',
+			// 'subscription_date_changes', // TODO: Shows renew-now
+			// 'subscription_payment_method_change'
+			// 'subscription_payment_method_change_customer',
+			// 'subscription_payment_method_change_admin',
+			// 'multiple_subscriptions',
 		);
 
 		// For WooCommerce Subscriptions
@@ -114,19 +124,29 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			'woocommerce_subscription_failing_payment_method_updated_' . $this->id,
 			array(
 				$this,
-				'update_failing_payment_method',
-				10,
-				2,
-			)
+				'update_failing_payment_method'
+			),
+			10,
+			2
+		);
+		// Cancel subscription in Netcash
+		add_action(
+			'woocommerce_subscription_cancelled_' . $this->id,
+			array(
+				$this,
+				'via_update_api_cancel_subscription',
+			),
+			10,
+			2
 		);
 		add_action(
 			'handle_subscription_renewal_payment_failed',
 			array(
 				$this,
 				'woocommerce_subscription_renewal_payment_failed',
-				10,
-				2,
-			)
+			),
+			10,
+			2
 		);
 		add_action(
 			'woocommerce_scheduled_subscription_payment_' . $this->id,
@@ -520,6 +540,9 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$order = new WC_Order( $order_id );
 
+		// We cannot charge 0. E.g., subscription with free trial and no sign-up fee.
+		$order_total = floatval($order->get_total()) ? $order->get_total() : 1;
+
 		$customer_name = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
 		$customer_id   = $order->get_user_id();
 		$netcash_guid  = '7f7a86f8-5642-4595-8824-aa837fc584f2';
@@ -532,7 +555,8 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$form->setOrderID( $order->get_id() );
 		$form->setDescription( "{$customer_name} ({$order->get_order_number()})" );
-		$form->setAmount( $order->get_total() );
+
+		$form->setAmount( $order_total );
 
 		// Show Budget period dropdown on gateway
 		$form->setBudget( true );
@@ -581,6 +605,11 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			if ( wcs_order_contains_subscription( $order ) ) {
 				$this->log( 'Order contains a subscription' );
 
+				// TODO: Use SubscriptionUpdate::orderToNetcashSubscription( $order ) here
+
+				// Don't append date
+				$form->setUniqueId( $order->get_id() );
+
 				$subscriptions      = wcs_get_subscriptions_for_order( $order, array( 'order_type' => 'parent' ) );
 				$first_subscription = $subscriptions && count( $subscriptions ) ? array_shift( $subscriptions ) : null;
 
@@ -604,13 +633,14 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 					$form->setIsSubscription( true );
 
 					// Set a better description for subscriptions.
+					// $free_trial = floatval($order->get_total()) == 0.0;
 					$desc = trim(
 						wp_strip_all_tags(
 							sprintf(
 								'Subsr %s. %s now. Then %s',
 								$order->get_order_number(),
 								wc_price(
-									$order->get_total(),
+									$order_total,
 									array(
 										'currency'     => $order->get_currency(),
 										'ex_tax_label' => false,
@@ -1192,7 +1222,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		?>
 		<tr>
 			<td colspan="2">
-				To cancel or manage your subscription, please <a href="mailto:<?php esc_html( $admin_email ); ?>">contact us</a> or
+				To manage your subscription, please <a href="mailto:<?php esc_html( $admin_email ); ?>">contact us</a> or
 				visit the <a target="_blank" href="https://netcash.co.za/">Netcash Pay Now</a> website.
 			</td>
 		</tr>
@@ -1376,6 +1406,39 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			self::log( "\t Set to manually renew. {$subscription->get_id()}" );
 			$subscription->set_requires_manual_renewal( true );
 			$subscription->save();
+		}
+	}
+
+	/**
+	 * Cancels a subscription via the Netcash API when it is cancelled in WooCommerce
+	 * See [WooCommerde docs](https://woocommerce.com/document/subscriptions/develop/payment-gateway-integration/)
+	 * See [Netcash docs](https://api.netcash.co.za/inbound-payments/pay-now/subscription-update-service/)
+	 *
+	 * @param WC_Order $order WC_Order object
+	 * @param int 	   $product_id WC_Product ID of the subscription product being cancelled
+	 */
+	public static function via_update_api_cancel_subscription($order, $product_id = false) {
+
+		self::log( "via_update_api_cancel_subscription called for {$order->get_id()}" );
+
+		$paynow      = new Netcash_WooCommerce_Gateway_PayNow();
+		$service_key = $paynow->settings ['service_key'];
+		try {
+
+			// Just cancel
+			$update = new Netcash\PayNow\SubscriptionUpdate($service_key, $order->get_id());
+			$result = $update->deactivateSubscription();
+
+			self::log( "via_update_api_cancel_subscription result for {$order->get_id()}", [
+				'result'=>$result
+			] );
+
+		} catch( \Exception $e ) {
+
+			self::log( "via_update_api_cancel_subscription ERROR: {$e->getMessage()}", [
+				'f'=>$e->getFile(),
+				'l'=>$e->getLine()
+			] );
 		}
 	}
 }
