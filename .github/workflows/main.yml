@@ -35,10 +35,10 @@ jobs:
       # SSH_KEY_FOR_NETCASH_PAYNOW_PHP & SSH_KEY_FOR_NETCASH_PAYNOW_PHP_PUBLIC added via Settings > Secrets
       # Add the .pub key to the (pulled) repo's Deploy Keys. Settings > Deploy keys
       - name: Install dependencies
-        uses: php-actions/composer@v4
+        uses: php-actions/composer@v6
         with:
           dev: no
-          composer_version: 2
+          version: 2
           args: --ignore-platform-reqs --no-scripts --no-cache
           php_version: 7.4
           ssh_key: ${{ secrets.SSH_KEY_FOR_NETCASH_PAYNOW_PHP }}
@@ -80,7 +80,7 @@ jobs:
       # Add the generated .zip to the release. See https://github.com/softprops/action-gh-release
       # # https://docs.github.com/en/actions/reference/environment-variables
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         # the if statement checks the github.ref context to determine the current tag
         # (filtering via fetch-depth)
         # if: startsWith(github.ref, 'refs/tags/')
@@ -93,16 +93,16 @@ jobs:
       - name: Run a single-line script
         run: echo Finished creating release!
 
-      - name: WordPress Plugin Deploy
-        uses: 10up/action-wordpress-plugin-deploy@master
-        env:
-          #TODO dry run is not working
-          INPUT_DRY_RUN: false
-          INPUT_GENERATE_ZIP: false
-          # SVN URL: https://plugins.svn.wordpress.org/netcash-pay-now-payment-gateway-for-woocommerce
-          # WP Plugin URL: https://wordpress.org/plugins/netcash-pay-now-payment-gateway-for-woocommerce
-          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-          SLUG: netcash-pay-now-payment-gateway-for-woocommerce
-          ASSETS_DIR: 'release/assets'
-          BUILD_DIR: 'release'
+      # - name: WordPress Plugin Deploy
+      #   uses: 10up/action-wordpress-plugin-deploy@master
+      #   env:
+      #     #TODO dry run is not working
+      #     INPUT_DRY_RUN: false
+      #     INPUT_GENERATE_ZIP: false
+      #     # SVN URL: https://plugins.svn.wordpress.org/netcash-pay-now-payment-gateway-for-woocommerce
+      #     # WP Plugin URL: https://wordpress.org/plugins/netcash-pay-now-payment-gateway-for-woocommerce
+      #     SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+      #     SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      #     SLUG: netcash-pay-now-payment-gateway-for-woocommerce
+      #     ASSETS_DIR: 'release/assets'
+      #     BUILD_DIR: 'release'

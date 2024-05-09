@@ -541,7 +541,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		$order = new WC_Order( $order_id );
 
 		// We cannot charge 0. E.g., subscription with free trial and no sign-up fee.
-		$order_total = floatval($order->get_total()) ? $order->get_total() : 1;
+		$order_total = floatval($order->get_total()) ? $order->get_total() : 0.01;
 
 		$customer_name = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
 		$customer_id   = $order->get_user_id();
