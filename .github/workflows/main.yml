@@ -59,19 +59,26 @@ jobs:
           # Note: cp -r copies .git and other hidden files. Replaced by rsync
           #cp -r vendor/netcash/paynow-php release/vendor/netcash
 
+          # For some reason the .git file gets copied... we're removing it when zipping below (zip -r xxx zzz -x exclude)
           echo "Copy vendor files"
           rsync -rmva "vendor/netcash/paynow-php/" "release/vendor/netcash/paynow-php" \
-            --include '*/' \
-            --include 'composer.json' \
-            --include 'AutoLoader.php' \
-            --include 'src/**.php' \
-            --exclude '*'
+            --exclude=".git" \
+            --exclude=".editorconfig" \
+            --exclude=".gitignore" \
+            --include='*/' \
+            --include="src/**.php" \
+            --include="composer.json" \
+            --include="AutoLoader.php" \
+            --exclude="*" \
+            --exclude="*.xml.dist
 
       # Runs the ZIP command using the runners shell
       - name: Zip the files
         run: |
           # Generate the plugin zip file "gateway-paynow.zip.
-          zip -r gateway-paynow.zip $(ls release) \
+          #zip -r gateway-paynow.zip $(ls release)
+          # Exclude vendor/netcash/paynow-php/.git in generated zip. See https://superuser.com/a/312302
+          zip -r gateway-paynow.zip release -x release/vendor/netcash/paynow-php/.git/**\*
 
       # Runs a single-line command using the runners shell
       - name: Run a single-line script
@@ -93,16 +100,16 @@ jobs:
       - name: Run a single-line script
         run: echo Finished creating release!
 
-      # - name: WordPress Plugin Deploy
-      #   uses: 10up/action-wordpress-plugin-deploy@master
-      #   env:
-      #     #TODO dry run is not working
-      #     INPUT_DRY_RUN: false
-      #     INPUT_GENERATE_ZIP: false
-      #     # SVN URL: https://plugins.svn.wordpress.org/netcash-pay-now-payment-gateway-for-woocommerce
-      #     # WP Plugin URL: https://wordpress.org/plugins/netcash-pay-now-payment-gateway-for-woocommerce
-      #     SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-      #     SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-      #     SLUG: netcash-pay-now-payment-gateway-for-woocommerce
-      #     ASSETS_DIR: 'release/assets'
-      #     BUILD_DIR: 'release'
+      - name: WordPress Plugin Deploy
+        uses: 10up/action-wordpress-plugin-deploy@master
+        env:
+          #TODO dry run is not working
+          INPUT_DRY_RUN: false
+          INPUT_GENERATE_ZIP: false
+          # SVN URL: https://plugins.svn.wordpress.org/netcash-pay-now-payment-gateway-for-woocommerce
+          # WP Plugin URL: https://wordpress.org/plugins/netcash-pay-now-payment-gateway-for-woocommerce
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SLUG: netcash-pay-now-payment-gateway-for-woocommerce
+          ASSETS_DIR: 'release/assets'
+          BUILD_DIR: 'release'
