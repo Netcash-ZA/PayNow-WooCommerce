@@ -56,6 +56,8 @@ jobs:
           cp -r assets release/assets
           cp -r includes release/includes
           cp -r logs release/logs
+          # Note: cp -r copies .git and other hidden files. Replaced by rsync
+          #cp -r vendor/netcash/paynow-php release/vendor/netcash
 
           echo "Copy vendor files"
           rsync -rmva "vendor/netcash/paynow-php/" "release/vendor/netcash/paynow-php" \
