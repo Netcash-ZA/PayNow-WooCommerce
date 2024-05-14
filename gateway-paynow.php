@@ -16,7 +16,7 @@
 	Author URI: http://www.netcash.co.za/
 	Requires at least: 3.5
 	Requires at least: 3.5
-	Tested up to: 5.8.3
+	Tested up to: 6.5
 
 */
 

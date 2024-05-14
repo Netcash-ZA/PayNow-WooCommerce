@@ -2,7 +2,7 @@
 Contributors: @netcashpaynow
 Tags: woocommerce, payment, gateway, south-africa, netcash
 Requires at least: 4.7
-Tested up to: 6.3
+Tested up to: 6.5
 Stable tag: 4.0.20
 Requires PHP: 7.0
 License: GPLv3
