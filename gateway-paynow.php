@@ -19,7 +19,9 @@
 
 */
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 
 /**
  * Plugin updates
@@ -64,7 +66,7 @@ function netcash_paynow_woocommerce_init() {
 	// Show payment errors after redirect.
 	add_action(
 		'init',
-		function() {
+		function () {
 			$notice = isset( $_GET['pnotice'] ) ? esc_url_raw( wp_unslash( $_GET['pnotice'] ) ) : null;
 			if ( $notice ) {
 				$type = isset( $_GET['ptype'] ) ? esc_url_raw( wp_unslash( $_GET['ptype'] ) ) : 'notice';
@@ -72,7 +74,6 @@ function netcash_paynow_woocommerce_init() {
 			}
 		}
 	);
-
 }
 
 /**
@@ -88,11 +89,14 @@ function netcash_paynow_woocommerce_add_gateway( $methods ) {
 
 
 // WooCommerce Checkout Blocks. See more info on integration.
-// 	- https://developer.woocommerce.com/2023/11/06/faq-extending-cart-and-checkout-blocks/
-// 	- https://github.com/woocommerce/woocommerce/blob/f93a05c467188081f482c3b843bdab70001de1f2/docs/cart-and-checkout-blocks/checkout-payment-methods/payment-method-integration.md
-add_action( 'before_woocommerce_init', function() {
-	// Not supported currently.
-    if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
-        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, false );
-    }
-} );
+// - https://developer.woocommerce.com/2023/11/06/faq-extending-cart-and-checkout-blocks/
+// - https://github.com/woocommerce/woocommerce/blob/f93a05c467188081f482c3b843bdab70001de1f2/docs/cart-and-checkout-blocks/checkout-payment-methods/payment-method-integration.md
+add_action(
+	'before_woocommerce_init',
+	function () {
+		// Not supported currently.
+		if ( class_exists( '\Automattic\WooCommerce\Utilities\FeaturesUtil' ) ) {
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, false );
+		}
+	}
+);

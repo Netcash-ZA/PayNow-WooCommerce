@@ -88,7 +88,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		// Setup default merchant data.
 		// $this->service_key = $this->settings ['service_key'];
 		// $this->url         = 'https://paynow.netcash.co.za/site/paynow.aspx';
-		$this->title       = $this->settings ['title'];
+		$this->title = $this->settings ['title'];
 
 		// Register support for subscriptions.
 		$this->supports = array(
@@ -124,7 +124,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			'woocommerce_subscription_failing_payment_method_updated_' . $this->id,
 			array(
 				$this,
-				'update_failing_payment_method'
+				'update_failing_payment_method',
 			),
 			10,
 			2
@@ -246,8 +246,8 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$user_id = isset( $_POST['Extra1'] ) ? sanitize_text_field( wp_unslash( $_POST['Extra1'] ) ) : '';
 		// if(!is_user_logged_in()) {
-		// 	// Log 'em in so we can verify the nonce
-		// 	wp_set_current_user($user_id);
+		// Log 'em in so we can verify the nonce
+		// wp_set_current_user($user_id);
 		// }
 
 		// Ignored because it's from a third party.
@@ -261,26 +261,26 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	public static function getPostData() {
 
 		// Keys we expect from Netcash
-		$pnKeys = [
+		$pnKeys = array(
 			'TransactionAccepted',
-			'Reason'             ,
-			'CardHolderIpAddr'   ,
-			'RequestTrace'       ,
-			'Reference'          ,
-			'Extra1'             ,
-			'Extra2'             ,
-			'Extra3'             ,
-			'Amount'             ,
-			'Method'             ,
-			'type'               ,
+			'Reason',
+			'CardHolderIpAddr',
+			'RequestTrace',
+			'Reference',
+			'Extra1',
+			'Extra2',
+			'Extra3',
+			'Amount',
+			'Method',
+			'type',
 			'SubscriptionAccepted',
-			'SubscriptionReason' ,
-		];
+			'SubscriptionReason',
+		);
 
-		$data = [];
-		foreach($pnKeys as $k) {
-			if(array_key_exists($k, $_POST)) {
-				$data[$k] = sanitize_text_field($_POST[$k]);
+		$data = array();
+		foreach ( $pnKeys as $k ) {
+			if ( array_key_exists( $k, $_POST ) ) {
+				$data[ $k ] = sanitize_text_field( $_POST[ $k ] );
 			}
 		}
 
@@ -471,9 +471,9 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public function plugin_url() {
 		if ( is_ssl() ) {
-			$url = str_replace( 'http://', 'https://', WP_PLUGIN_URL ) . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
+			$url = str_replace( 'http://', 'https://', WP_PLUGIN_URL ) . '/' . plugin_basename( dirname( __DIR__ ) );
 		} else {
-			$url = WP_PLUGIN_URL . '/' . plugin_basename( dirname( dirname( __FILE__ ) ) );
+			$url = WP_PLUGIN_URL . '/' . plugin_basename( dirname( __DIR__ ) );
 		}
 		return $url;
 	}
@@ -541,7 +541,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		$order = new WC_Order( $order_id );
 
 		// We cannot charge 0. E.g., subscription with free trial and no sign-up fee.
-		$order_total = floatval($order->get_total()) ? $order->get_total() : 0.01;
+		$order_total = floatval( $order->get_total() ) ? $order->get_total() : 0.01;
 
 		$customer_name = "{$order->get_billing_first_name()} {$order->get_billing_last_name()}";
 		$customer_id   = $order->get_user_id();
@@ -580,8 +580,8 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		// E.g. https://developer.wordpress.org/reference/functions/wp_set_auth_cookie/ or https://developer.wordpress.org/reference/functions/wp_set_current_user/
 		// Won't work with login/logout as the session cookie will have changed... :/
 		// if(is_user_logged_in()) {
-		// 	// Logout user
-		// 	wp_logout();
+		// Logout user
+		// wp_logout();
 		// }
 
 		$nonce_value = wp_create_nonce( $nonce_action );
@@ -589,8 +589,17 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		// Re-login user
 		// wp_set_current_user($customer_id);
 
-		self::log( '[OrderNonce] Created with action and value', print_r(
-			['user_id' => $customer_id, 'action' => $nonce_action, 'value' => $nonce_value ], true) );
+		self::log(
+			'[OrderNonce] Created with action and value',
+			print_r(
+				array(
+					'user_id' => $customer_id,
+					'action'  => $nonce_action,
+					'value'   => $nonce_value,
+				),
+				true
+			)
+		);
 
 		$form->setExtraField( $customer_id, 1 );
 		// $form->setExtraField( $order->get_cancel_order_url(), 2 );
@@ -740,7 +749,6 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 						jQuery( "form#netcash-paynow-form [type=\'submit\']" ).click();
 					});
 				</script>';
-
 	}
 
 	/**
@@ -776,18 +784,18 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		?>
 		<p><?php esc_html__( 'Thank you for your order, please click the button below to pay with Pay Now.', 'woothemes' ); ?></p>
 		<?php
-		$whitelist = [
-			'a' => [
+		$whitelist = array(
+			'a'      => array(
 				'title' => true,
-				'href' => true,
-			],
-			'input' => [
-				'type' => true,
-				'name' => true,
+				'href'  => true,
+			),
+			'input'  => array(
+				'type'  => true,
+				'name'  => true,
 				'value' => true,
-			],
-			'form' => [
-				'id'         => true,
+			),
+			'form'   => array(
+				'id'             => true,
 				'action'         => true,
 				'accept'         => true,
 				'accept-charset' => true,
@@ -795,11 +803,11 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 				'method'         => true,
 				'name'           => true,
 				'target'         => true,
-			],
-			'script' => [
-				'type'=>true,
-			]
-		];
+			),
+			'script' => array(
+				'type' => true,
+			),
+		);
 		echo wp_kses( $this->generate_paynow_form( $order ), $whitelist );
 	}
 
@@ -901,7 +909,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		if ( $order->get_status() === 'completed' ) {
 			// Already processed. Skip.
 			$this->log( 'successful_request - order status already completed. Aborting...' );
-			return new Netcash\PayNow\Response( [] );
+			return new Netcash\PayNow\Response( array() );
 			// throw new \Exception( 'order exists...' );
 		}
 
@@ -1062,7 +1070,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 
 		$date = gmdate( 'Y-m-d' );
-		$dir  = realpath( dirname( __FILE__ ) . '/../logs' );
+		$dir  = realpath( __DIR__ . '/../logs' );
 		$file = $dir . "/general-{$date}.log";
 
 		$fh = null;
@@ -1102,7 +1110,6 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 
 			fclose( $fh );
 		}
-
 	}
 
 	/**
@@ -1182,7 +1189,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		if ( ! $redirect_url ) {
 			// Probably calling the "redirect" URL.
 			$this->log( 'handle_return_url Probably calling the "redirect" URL' );
-			$redirect_url  = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
+			$redirect_url = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
 			// $redirect_url .= '/my-account/';
 		}
 
@@ -1207,7 +1214,6 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		<script>window.location='<?php esc_html( $redirect_url ); ?>'</script>
 		<?php
 		exit();
-
 	}
 
 	/**
@@ -1348,12 +1354,11 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			$message .= "{$supported_or_reason}";
 			add_action(
 				'admin_notices',
-				function() use ( $message ) {
+				function () use ( $message ) {
 					Netcash_WooCommerce_Gateway_PayNow::error_notice_general( $message );
 				}
 			);
 		}
-
 	}
 
 
@@ -1392,7 +1397,6 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 
 		update_post_meta( $original_order->get_id(), '_update_failing_payment_method_called', 1 );
 		update_post_meta( $original_order->get_id(), '_your_gateway_customer_token_id', get_post_meta( $new_renewal_order->get_id(), '_your_gateway_customer_token_id', true ) );
-
 	}
 
 	/**
@@ -1419,9 +1423,9 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 * See [Netcash docs](https://api.netcash.co.za/inbound-payments/pay-now/subscription-update-service/)
 	 *
 	 * @param WC_Order $order WC_Order object
-	 * @param int 	   $product_id WC_Product ID of the subscription product being cancelled
+	 * @param int      $product_id WC_Product ID of the subscription product being cancelled
 	 */
-	public static function via_update_api_cancel_subscription($order, $product_id = false) {
+	public static function via_update_api_cancel_subscription( $order, $product_id = false ) {
 
 		self::log( "via_update_api_cancel_subscription called for {$order->get_id()}" );
 
@@ -1430,19 +1434,25 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		try {
 
 			// Just cancel
-			$update = new Netcash\PayNow\SubscriptionUpdate($service_key, $order->get_id());
+			$update = new Netcash\PayNow\SubscriptionUpdate( $service_key, $order->get_id() );
 			$result = $update->deactivateSubscription();
 
-			self::log( "via_update_api_cancel_subscription result for {$order->get_id()}", [
-				'result'=>$result
-			] );
+			self::log(
+				"via_update_api_cancel_subscription result for {$order->get_id()}",
+				array(
+					'result' => $result,
+				)
+			);
 
-		} catch( \Exception $e ) {
+		} catch ( \Exception $e ) {
 
-			self::log( "via_update_api_cancel_subscription ERROR: {$e->getMessage()}", [
-				'f'=>$e->getFile(),
-				'l'=>$e->getLine()
-			] );
+			self::log(
+				"via_update_api_cancel_subscription ERROR: {$e->getMessage()}",
+				array(
+					'f' => $e->getFile(),
+					'l' => $e->getLine(),
+				)
+			);
 		}
 	}
 }

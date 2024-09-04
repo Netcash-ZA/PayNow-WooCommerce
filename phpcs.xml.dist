@@ -27,7 +27,7 @@
             <property name="allowUnusedParametersBeforeUsed" value="true"/>
         </properties>
     </rule>
-    <rule ref="WordPress.CodeAnalysis.EmptyStatement"/>
+    <!-- <rule ref="WordPress.CodeAnalysis.EmptyStatement"/> -->
 
     <rule ref="PEAR.Functions.FunctionCallSignature">
         <properties>
@@ -40,7 +40,6 @@
 
 <!--    <file>./bin</file>-->
     <file>./gateway-paynow.php</file>
-    <file>./notify-callback.php</file>
 <!--    <file>./lib</file>-->
     <file>./includes</file>
     <file>./includes/woocommerce</file>

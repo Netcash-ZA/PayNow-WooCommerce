@@ -61,7 +61,4 @@ class Netcash_WC_Dependencies {
 		return in_array( 'woocommerce-subscriptions/woocommerce-subscriptions.php', self::$active_plugins, true )
 			|| array_key_exists( 'woocommerce-subscriptions/woocommerce-subscriptions.php', self::$active_plugins );
 	}
-
 }
-
-
