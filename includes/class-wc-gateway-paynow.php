@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.25';
+	public $version = '4.0.26';
 
 	/**
 	 * The gateway name / id.
@@ -715,14 +715,14 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		}
 		$this->log( 'Netcash Pay Now form post paynow_args_array: ' . print_r( $debug_fields, true ) );
 
-		return $the_form;
-		/*
+		// return $the_form;
+
 		return $the_form . '<a class="button cancel" href="' . $order->get_cancel_order_url() . '">' . __( 'Cancel order &amp; restore cart', 'woothemes' ) . '</a>
 				<script type="text/javascript">
 					jQuery(function(){
 						jQuery("body").block(
 							{
-								message: "<img src=\"' . $woocommerce->plugin_url() . '/assets/images/ajax-loader.gif\" alt=\"Redirecting...\" />' . __( 'Thank you for your order. We are now redirecting you to Netcash Pay Now to make payment.', 'woothemes' ) . '",
+								message: "' . __( 'Thank you for your order. We are now redirecting you to Netcash Pay Now to make payment.', 'woothemes' ) . '",
 								overlayCSS:
 								{
 									background: "#fff",
@@ -737,10 +737,10 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 							        cursor:         "wait"
 							    }
 							});
-						jQuery( "#netcash-paynow-submit" ).click();
+						jQuery( "form#netcash-paynow-form [type=\'submit\']" ).click();
 					});
 				</script>';
-				*/
+
 	}
 
 	/**
@@ -787,6 +787,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 				'value' => true,
 			],
 			'form' => [
+				'id'         => true,
 				'action'         => true,
 				'accept'         => true,
 				'accept-charset' => true,
@@ -794,6 +795,9 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 				'method'         => true,
 				'name'           => true,
 				'target'         => true,
+			],
+			'script' => [
+				'type'=>true,
 			]
 		];
 		echo wp_kses( $this->generate_paynow_form( $order ), $whitelist );

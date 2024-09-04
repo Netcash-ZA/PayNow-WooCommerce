@@ -3,7 +3,7 @@ Contributors: @netcashpaynow
 Tags: woocommerce, payment, gateway, south-africa, netcash
 Requires at least: 4.7
 Tested up to: 6.5
-Stable tag: 4.0.25
+Stable tag: 4.0.26
 Requires PHP: 7.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -138,6 +138,12 @@ If debugging is enabled we will log to the default PHP error log. Please ask you
 4. Netcash Scan to Pay
 
 == Changelog ==
+
+= 4.0.26 =
+
+* Add auto redirect
+* Declare incompatibility for WooCommerce checkout blocks
+* Update WooCommerce linting
 
 = 4.0.25 =
 
