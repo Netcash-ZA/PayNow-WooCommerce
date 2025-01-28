@@ -275,6 +275,10 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			'type',
 			'SubscriptionAccepted',
 			'SubscriptionReason',
+			'ccToken',
+			'ccHolder',
+			'ccMasked',
+			'ccExpiry',
 		);
 
 		$data = array();
@@ -1025,6 +1029,8 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 					// Regular order payment.
 					$order->payment_complete( $transaction_id );
 				}
+
+				// $this->log( "\t Transaction - check token", $posted );
 
 				if ( $response->wasCreditCardTransaction() ) {
 					// It was a CC transaction.

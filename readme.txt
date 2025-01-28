@@ -67,10 +67,7 @@ Use the following URLs for the callbacks.
 * Accept, Decline, and Redirect URLs:
 	https://YOUR_DOMAIN.co.za/
 * Notify URL:
-    https://YOUR_DOMAIN.co.za/wp-content/plugins/gateway-paynow/notify-callback.php
-
-> **NOTE:** If your WordPress installation is in a sub-directory, use
-> https://your_domain_name.co.za/SUBDIRECTORY_NAME/wp-content/plugins/gateway-paynow/notify-callback.php
+    Leave the notify URL blank
 
 **Important:** Please make sure you use the correct URL for the redirects.
 

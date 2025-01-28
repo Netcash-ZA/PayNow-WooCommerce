@@ -163,7 +163,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/iedev1/paynow-php",
-                "reference": "7c6c9264119eab27c8ab89478f08b1805d2aea26"
+                "reference": "ee4af7046e3869a39c9bc20912c4995f790f1fae"
             },
             "require": {
                 "ext-soap": "*",
@@ -215,7 +215,7 @@
                 "paynow",
                 "south africa"
             ],
-            "time": "2024-05-08T06:17:30+00:00"
+            "time": "2025-01-28T12:48:33+00:00"
         }
     ],
     "packages-dev": [
