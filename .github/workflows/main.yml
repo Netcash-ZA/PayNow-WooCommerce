@@ -75,15 +75,10 @@ jobs:
       # Runs the ZIP command using the runners shell
       - name: Zip the files
         run: |
-
-          # We want the folder inside the zip file to be called "gateway-paynow"
-          #   we then zip up the gateway-paynow folder
-          mv release gateway-paynow
-
           # Generate the plugin zip file "gateway-paynow.zip.
           #zip -r gateway-paynow.zip $(ls release)
           # Exclude vendor/netcash/paynow-php/.git in generated zip. See https://superuser.com/a/312302
-          zip -r gateway-paynow.zip gateway-paynow -x gateway-paynow/vendor/netcash/paynow-php/.git/**\*
+          zip -r gateway-paynow.zip release -x gateway-paynow/vendor/netcash/paynow-php/.git/**\*
 
       # Runs a single-line command using the runners shell
       - name: Run a single-line script
@@ -118,3 +113,4 @@ jobs:
           SLUG: netcash-pay-now-payment-gateway-for-woocommerce
           ASSETS_DIR: 'release/assets'
           BUILD_DIR: 'release'
+          EXCLUDE: 'DOCKER_ENV docker_tag output.log .github .git'
