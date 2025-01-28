@@ -37,3 +37,7 @@ phpunit.xml.dist
 phpcs.xml.dist
 # Skip the tmp/generated /release folder
 release
+
+DOCKER_ENV
+docker_tag
+output.log

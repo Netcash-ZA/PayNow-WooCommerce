@@ -113,4 +113,3 @@ jobs:
           SLUG: netcash-pay-now-payment-gateway-for-woocommerce
           ASSETS_DIR: 'release/assets'
           BUILD_DIR: 'release'
-          EXCLUDE: 'DOCKER_ENV docker_tag output.log .github .git'
