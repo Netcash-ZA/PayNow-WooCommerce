@@ -11,11 +11,11 @@
 	Plugin URI: https://github.com/Netcash-ZA/PayNow-WooCommerce
 	Description: A payment gateway for South African payment system, Netcash Pay Now.
 	License: GPL v3
-	Version: 4.0.27
+	Version: 4.0.28
 	Author: Netcash
 	Author URI: http://www.netcash.co.za/
 	Requires at least: 3.5
-	Tested up to: 6.5
+	Tested up to: 6.7
 
 */
 

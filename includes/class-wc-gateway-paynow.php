@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.27';
+	public $version = '4.0.28';
 
 	/**
 	 * The gateway name / id.
@@ -279,6 +279,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			'ccHolder',
 			'ccMasked',
 			'ccExpiry',
+			'type', // set to 'DEPOSITRECEIPT' for notify URL
 		);
 
 		$data = array();
@@ -1143,8 +1144,9 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			)
 		);
 
-		$redirect_url = '';
-		$notice       = null;
+		$woocomm_acc_page_url = wc_get_page_permalink( 'myaccount' );
+		$redirect_url         = '';
+		$notice               = null;
 
 		$order_id = esc_attr( $response->getOrderID() );
 
@@ -1157,6 +1159,22 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 					'msg' => $e->getMessage(),
 				)
 			);
+		}
+
+		$data     = $response->getData();
+		$isNotify = isset( $data['type'] ) && $data['type'] === 'DEPOSITRECEIPT';
+		if ( ! $isNotify ) {
+			// Skip - we don't want to accidentally recon twice. Only react on the notify
+			$redirect_url = $woocomm_acc_page_url . "/view-order/{$order->ID}";
+			$this->log( 'handle_return_url - NOT NOTIFY: redirecting to ' . $redirect_url );
+
+			// WordPress redirect.
+			wp_safe_redirect( $redirect_url );
+			// JavaScript redirect.
+			?>
+			<script>window.location='<?php esc_html( $redirect_url ); ?>'</script>
+			<?php
+			exit();
 		}
 
 		if ( $response->wasAccepted() ) {

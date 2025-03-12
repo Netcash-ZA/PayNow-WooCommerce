@@ -64,10 +64,8 @@ You will need:
 
 Use the following URLs for the callbacks.
 
-* Accept, Decline, and Redirect URLs:
+* Accept, Decline, Notify, and Redirect URLs:
 	https://YOUR_DOMAIN.co.za/
-* Notify URL:
-    Leave the notify URL blank
 
 **Important:** Please make sure you use the correct URL for the redirects.
 
@@ -135,6 +133,10 @@ If debugging is enabled we will log to the default PHP error log. Please ask you
 4. Netcash Scan to Pay
 
 == Changelog ==
+
+= 4.0.28 =
+
+* Add back notify URL and update compatibility
 
 = 4.0.27 =
 
