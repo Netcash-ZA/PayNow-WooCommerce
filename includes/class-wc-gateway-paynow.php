@@ -323,8 +323,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		$s = '';
 
 		$msg  = '<strong>Netcash Connecter URLs:</strong><br>';
-		$msg .= "<strong>Accept</strong>, <strong>Decline</strong>, and <strong>Redirect</strong> URL: <code style='{$s}'>{$url}</code><br>";
-		$msg .= "<strong>Notify</strong> URL: <code style='{$s}'>{$plugin_url}notify-callback.php</code><br>";
+		$msg .= "<strong>Accept</strong>, <strong>Decline</strong>, <strong>Notify</strong>, and <strong>Redirect</strong> URL: <code style='{$s}'>{$url}</code><br>";
 		self::error_notice_general( $msg, 'info' );
 	}
 
