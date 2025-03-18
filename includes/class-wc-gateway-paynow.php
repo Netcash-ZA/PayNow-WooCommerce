@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.0.28';
+	public $version = '4.1.0';
 
 	/**
 	 * The gateway name / id.
@@ -115,6 +115,8 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			// 'subscription_payment_method_change_customer',
 			// 'subscription_payment_method_change_admin',
 			// 'multiple_subscriptions',
+
+			'woocommerce-blocks',
 		);
 
 		// For WooCommerce Subscriptions
