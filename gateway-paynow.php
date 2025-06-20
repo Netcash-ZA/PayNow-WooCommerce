@@ -11,11 +11,11 @@
 	Plugin URI: https://github.com/Netcash-ZA/PayNow-WooCommerce
 	Description: A payment gateway for South African payment system, Netcash Pay Now.
 	License: GPL v3
-	Version: 4.1.0
+	Version: 4.1.1
 	Author: Netcash
 	Author URI: http://www.netcash.co.za/
 	Requires at least: 3.5
-	Tested up to: 6.7
+	Tested up to: 6.8
 
 */
 
@@ -105,22 +105,27 @@ add_action(
  * Enqueue blocks.js
  */
 function netcash_paynow_enqueue_assets() {
-    if ( function_exists( 'is_checkout' ) && is_checkout() ) {
-        wp_enqueue_script(
-            'netcash-paynow-blocks',
-            plugins_url( 'assets/js/blocks.js', __FILE__ ),
-            array( 'wc-blocks-registry', 'wp-element', 'wp-hooks' ),
-            '1.0.0',
-            true
-        );
+	if ( function_exists( 'is_checkout' ) && is_checkout() ) {
+		wp_enqueue_script(
+			'netcash-paynow-blocks',
+			plugins_url( 'assets/js/blocks.js', __FILE__ ),
+			array( 'wc-blocks-registry', 'wp-element', 'wp-hooks' ),
+			'1.0.0',
+			true
+		);
 
-        // Add "type=module" to the script tag
-        add_filter( 'script_loader_tag', function( $tag, $handle ) {
-            if ( 'netcash-paynow-blocks' !== $handle ) {
-                return $tag;
-            }
-            return str_replace( 'src', 'type="module" src', $tag );
-        }, 10, 2 );
-    }
+		// Add "type=module" to the script tag
+		add_filter(
+			'script_loader_tag',
+			function ( $tag, $handle ) {
+				if ( 'netcash-paynow-blocks' !== $handle ) {
+					return $tag;
+				}
+				return str_replace( 'src', 'type="module" src', $tag );
+			},
+			10,
+			2
+		);
+	}
 }
 add_action( 'wp_enqueue_scripts', 'netcash_paynow_enqueue_assets' );
