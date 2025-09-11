@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.1.1';
+	public $version = '4.1.2';
 
 	/**
 	 * The gateway name / id.
@@ -1452,18 +1452,29 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 */
 	public static function via_update_api_cancel_subscription( $order, $product_id = false ) {
 
-		self::log( "via_update_api_cancel_subscription called for {$order->get_id()}" );
+		$subscription_id = $order->get_parent_id();
+
+		self::log(
+			"via_update_api_cancel_subscription called for order/sub {$subscription_id}",
+			array(
+				'order_id'   => $order->get_id(),
+				'product_id' => $product_id,
+			)
+		);
 
 		$paynow      = new Netcash_WooCommerce_Gateway_PayNow();
 		$service_key = $paynow->settings ['service_key'];
+
+		// TODO: Fix 'Merchant reference not found. Ensure that the value in P2 refers to an existing subscription'
+
 		try {
 
 			// Just cancel
-			$update = new Netcash\PayNow\SubscriptionUpdate( $service_key, $order->get_id() );
+			$update = new Netcash\PayNow\SubscriptionUpdate( $service_key, $subscription_id );
 			$result = $update->deactivateSubscription();
 
 			self::log(
-				"via_update_api_cancel_subscription result for {$order->get_id()}",
+				"via_update_api_cancel_subscription result for {$subscription_id}",
 				array(
 					'result' => $result,
 				)
