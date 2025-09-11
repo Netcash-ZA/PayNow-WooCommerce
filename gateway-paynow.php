@@ -11,7 +11,7 @@
 	Plugin URI: https://github.com/Netcash-ZA/PayNow-WooCommerce
 	Description: A payment gateway for South African payment system, Netcash Pay Now.
 	License: GPL v3
-	Version: 4.1.2
+	Version: 4.1.3
 	Author: Netcash
 	Author URI: http://www.netcash.co.za/
 	Requires at least: 3.5
@@ -26,7 +26,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin updates
  */
-load_plugin_textdomain( 'wc_paynow', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) );
 
 add_action( 'plugins_loaded', 'netcash_paynow_woocommerce_init', 0 );
 
@@ -40,6 +39,8 @@ function netcash_paynow_woocommerce_init() {
 	if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
 		return;
 	}
+
+	load_plugin_textdomain( 'wc_paynow', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ) );
 
 	/**
 	 * Require Pay Now Gateway
