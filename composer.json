@@ -27,9 +27,11 @@
   },
   "scripts": {
 		"format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
+		"format-wp": "phpcbf -ps . --standard=WordPress -d memory_limit=720M --ignore-annotations --extensions=php,html --ignore=vendor/,node_modules/,logs/",
+		"format-wc": "phpcbf -ps ./includes gateway-paynow.php --standard=WooCommerce-Core --warning-severity=0 --ignore-annotations --extensions=php,html -d error_reporting=24575",
 		"lint": "phpcs --standard=phpcs.xml.dist",
 		"lint-wc": "phpcs -ps ./includes gateway-paynow.php --standard=WooCommerce-Core --warning-severity=0 --report-source --report-xml=./phpcs-report.xml --ignore-annotations --extensions=php,html -d error_reporting=24575",
-		"lint-wp": "phpcs -ps . --standard=WordPress -d memory_limit=720M --ignore-annotations --extensions=php,html"
+		"lint-wp": "phpcs -ps . --standard=WordPress -d memory_limit=720M --ignore-annotations --extensions=php,html --ignore=vendor/,node_modules/,logs/"
   },
   "repositories": [
 		{

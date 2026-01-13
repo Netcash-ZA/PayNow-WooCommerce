@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.1.3';
+	public $version = '4.1.4';
 
 	/**
 	 * The gateway name / id.
@@ -494,7 +494,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		$is_available  = false;
 		$user_currency = get_option( 'woocommerce_currency' );
 
-		$is_available_currency = in_array( $user_currency, $this->available_currencies, true );
+		$is_available_currency = in_array( $user_currency, $this->availability, true );
 
 		if ( $is_available_currency ) {
 			$is_available = true;
@@ -599,9 +599,9 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 			'[OrderNonce] Created with action and value',
 			print_r(
 				array(
-					'user_id' => $customer_id,
-					'action'  => $nonce_action,
-					'value'   => $nonce_value,
+					'user_id'      => $customer_id,
+					'nonce_action' => $nonce_action,
+					'nonce_value'  => $nonce_value,
 				),
 				true
 			)
@@ -1062,6 +1062,59 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * Verify transaction authenticity with Netcash server
+	 *
+	 * @param string $request_trace The RequestTrace parameter from the callback.
+	 *
+	 * @return array|false Array with transaction data on success, false on failure.
+	 * @since 4.1.4
+	 */
+	public static function verify_transaction_with_netcash( $request_trace ) {
+		if ( empty( $request_trace ) ) {
+			self::log( 'verify_transaction_with_netcash: RequestTrace is empty' );
+			return false;
+		}
+
+		$url = 'https://ws.netcash.co.za/PayNow/TransactionStatus/Check?RequestTrace=' . urlencode( $request_trace );
+
+		self::log( 'verify_transaction_with_netcash: Querying Netcash', array( 'url' => $url ) );
+
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => 15,
+				'headers' => array(
+					'Accept' => 'application/json',
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			self::log( 'verify_transaction_with_netcash: HTTP error', array( 'error' => $response->get_error_message() ) );
+			return false;
+		}
+
+		$response_code = wp_remote_retrieve_response_code( $response );
+		$body          = wp_remote_retrieve_body( $response );
+
+		if ( 200 !== $response_code ) {
+			self::log( 'verify_transaction_with_netcash: Non-200 response', array( 'code' => $response_code ) );
+			return false;
+		}
+
+		$data = json_decode( $body, true );
+
+		if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $data ) ) {
+			self::log( 'verify_transaction_with_netcash: Invalid JSON response', array( 'body' => $body ) );
+			return false;
+		}
+
+		self::log( 'verify_transaction_with_netcash: Successfully retrieved data from Netcash', $data );
+
+		return $data;
+	}
+
+	/**
 	 * Log system processes.
 	 *
 	 * @param string $message The log message.
@@ -1144,6 +1197,76 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 				'wasCancelled' => $response->wasCancelled() ? 'Yes' : 'No',
 			)
 		);
+
+		// SECURITY FIX (CVE-2025-14880): Verify transaction authenticity with Netcash server
+		// Only verify for NOTIFY callbacks (type=DEPOSITRECEIPT) that are processing payments
+		$data     = $response->getData();
+		$isNotify = isset( $data['type'] ) && $data['type'] === 'DEPOSITRECEIPT';
+
+		if ( $isNotify && $response->wasAccepted() ) {
+			// This is a payment notification that claims success - verify it with Netcash
+			$request_trace = isset( $data['RequestTrace'] ) ? sanitize_text_field( $data['RequestTrace'] ) : '';
+
+			if ( empty( $request_trace ) ) {
+				$this->log( 'handle_return_url - SECURITY: Missing RequestTrace in notify callback' );
+				wp_die( esc_html__( 'Invalid payment notification: Missing transaction trace.', 'woothemes' ), 'Payment Error', array( 'response' => 400 ) );
+			}
+
+			// Verify the transaction with Netcash's server
+			$verified_data = self::verify_transaction_with_netcash( $request_trace );
+
+			if ( false === $verified_data ) {
+				$this->log( 'handle_return_url - SECURITY: Failed to verify transaction with Netcash' );
+				wp_die( esc_html__( 'Payment verification failed. Please contact support.', 'woothemes' ), 'Payment Error', array( 'response' => 403 ) );
+			}
+
+			// Compare verified data with POSTed data
+			$ref_to_order_id     = isset( $verified_data['Reference'] ) ? array_shift( explode( '__', $verified_data['Reference'] ) ) : '';
+			$order_id_match      = $ref_to_order_id && strval( $ref_to_order_id ) === strval( $response->getOrderID() );
+			$amount_match        = isset( $verified_data['Amount'] ) && abs( floatval( $verified_data['Amount'] ) - floatval( $response->getAmount() ) ) < 0.01;
+			$accepted_match      = isset( $verified_data['TransactionAccepted'] ) && $verified_data['TransactionAccepted'] === $response->wasAccepted();
+			$request_trace_match = isset( $verified_data['RequestTrace'] ) && $verified_data['RequestTrace'] === $request_trace;
+
+			if ( ! $order_id_match || ! $amount_match || ! $accepted_match || ! $request_trace_match ) {
+				$this->log(
+					'handle_return_url - SECURITY: Transaction data mismatch',
+					array(
+						'order_match'  => $order_id_match ? 'Yes' : 'No',
+						'amount_match' => $amount_match ? 'Yes' : 'No',
+						'status_match' => $accepted_match ? 'Yes' : 'No',
+						'trace_match'  => $request_trace_match ? 'Yes' : 'No',
+					)
+				);
+
+				wp_die( esc_html__( 'Payment verification failed: Data mismatch. Please contact support.', 'woothemes' ), 'Payment Error', array( 'response' => 403 ) );
+			}
+
+			$this->log( 'handle_return_url - SECURITY: Transaction successfully verified with Netcash' );
+
+			// LAYER 2: Verify order key matches (prevents order ID guessing attacks)
+			$order_id  = $response->getOrderID();
+			$order_key = $response->getExtra( 3 );
+
+			if ( empty( $order_key ) ) {
+				$this->log( 'handle_return_url - SECURITY: Missing order key' );
+				wp_die( esc_html__( 'Invalid payment notification: Missing order key.', 'woothemes' ), 'Payment Error', array( 'response' => 400 ) );
+			}
+
+			// Verify the order key matches the order
+			// This prevents attackers from guessing order IDs since they'd also need the unique order key
+			try {
+				$order = new WC_Order( $order_id );
+				if ( ! $order || $order->get_order_key() !== $order_key ) {
+					$this->log( 'handle_return_url - SECURITY: Order key mismatch' );
+					wp_die( esc_html__( 'Payment verification failed: Invalid order key.', 'woothemes' ), 'Payment Error', array( 'response' => 403 ) );
+				}
+			} catch ( \Exception $e ) {
+				$this->log( 'handle_return_url - SECURITY: Failed to load order', array( 'error' => $e->getMessage() ) );
+				wp_die( esc_html__( 'Payment verification failed: Invalid order.', 'woothemes' ), 'Payment Error', array( 'response' => 400 ) );
+			}
+
+			$this->log( 'handle_return_url - SECURITY: Order key successfully verified' );
+		}
 
 		$woocomm_acc_page_url = wc_get_page_permalink( 'myaccount' );
 		$redirect_url         = '';

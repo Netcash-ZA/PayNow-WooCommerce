@@ -2,8 +2,8 @@
 Contributors: @netcashpaynow
 Tags: woocommerce, payment, gateway, south-africa, netcash
 Requires at least: 4.7
-Tested up to: 6.8
-Stable tag: 4.1.3
+Tested up to: 6.9
+Stable tag: 4.1.4
 Requires PHP: 7.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -133,6 +133,12 @@ If debugging is enabled we will log to the default PHP error log. Please ask you
 4. Netcash Scan to Pay
 
 == Changelog ==
+
+= 4.1.4 =
+
+* Security fix: Address CVE-2025-14880 - Missing Authorization vulnerability
+* Add server-side transaction verification with Netcash TransactionStatus API
+* Prevent unauthorized modification of order status via callback endpoint
 
 = 4.1.3 =
 

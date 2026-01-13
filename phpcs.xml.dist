@@ -46,7 +46,10 @@
 <!--    <file>./phpunit</file>-->
 <!--    <file>./post-content.php</file>-->
 
-    <!-- Exclude generated files -->
+    <!-- Exclude generated files and dependencies -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/logs/*</exclude-pattern>
 <!--    <exclude-pattern>./packages/block-serialization-spec-parser/parser.php</exclude-pattern>-->
 
     <!-- These special comments are markers for the build process -->
