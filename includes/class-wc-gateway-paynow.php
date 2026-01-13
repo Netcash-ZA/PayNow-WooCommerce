@@ -70,12 +70,12 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 		// $this->debug_email        = get_option( 'admin_email' );
 
 		// Setup available countries.
-		$this->available_countries = array(
+		$this->countries = array(
 			'ZA',
 		);
 
 		// Setup available currency codes.
-		$this->available_currencies = array(
+		$this->availability = array(
 			'ZAR',
 		);
 
