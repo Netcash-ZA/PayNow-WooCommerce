@@ -2,8 +2,8 @@
 Contributors: @netcashpaynow
 Tags: woocommerce, payment, gateway, south-africa, netcash
 Requires at least: 4.7
-Tested up to: 6.9
-Stable tag: 4.1.4
+Tested up to: 7.0
+Stable tag: 4.1.5
 Requires PHP: 7.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -133,6 +133,11 @@ If debugging is enabled we will log to the default PHP error log. Please ask you
 4. Netcash Scan to Pay
 
 == Changelog ==
+
+= 4.1.5 =
+
+* Redirect to standard WooCommerce order-received / thank-you page (/checkout/order-received/{id}/).
+ This method also supports the `woocommerce_get_return_url` filter if devs want another redirect URL.
 
 = 4.1.4 =
 

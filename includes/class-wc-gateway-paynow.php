@@ -22,7 +22,7 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 	 *
 	 * @var string
 	 */
-	public $version = '4.1.4';
+	public $version = '4.1.5';
 
 	/**
 	 * The gateway name / id.
@@ -1287,9 +1287,13 @@ class Netcash_WooCommerce_Gateway_PayNow extends WC_Payment_Gateway {
 
 		$data     = $response->getData();
 		$isNotify = isset( $data['type'] ) && $data['type'] === 'DEPOSITRECEIPT';
-		if ( ! $isNotify ) {
-			// Skip - we don't want to accidentally recon twice. Only react on the notify
-			$redirect_url = $woocomm_acc_page_url . "/view-order/{$order->ID}";
+		if ( ! $isNotify && $order ) {
+			// Skip - we don't want to accidentally recon twice. Only react on the notify.
+			// Redirect the customer's browser to the standard WooCommerce order-received
+			// (thank-you) page. get_return_url() includes the order key, so this also works
+			// for guest checkouts (unlike the My Account view-order page, which requires login).
+			// this also supports the `woocommerce_get_return_url` filter if devs want another redirect URL.
+			$redirect_url = $this->get_return_url( $order );
 			$this->log( 'handle_return_url - NOT NOTIFY: redirecting to ' . $redirect_url );
 
 			// WordPress redirect.
