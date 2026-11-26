@@ -3,7 +3,7 @@ Contributors: @netcashpaynow
 Tags: woocommerce, payment, gateway, south-africa, netcash
 Requires at least: 4.7
 Tested up to: 7.2
-Stable tag: 4.1.6
+Stable tag: 4.1.8
 Requires PHP: 7.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -133,6 +133,14 @@ If debugging is enabled we will log to the default PHP error log. Please ask you
 4. Netcash Scan to Pay
 
 == Changelog ==
+
+= 4.1.8 =
+
+* Fix miss-tagging of release in SVN
+
+= 4.1.7 =
+
+* WordPress 7.2 support
 
 = 4.1.6 =
 
